@@ -1,0 +1,149 @@
+import pandas as pd
+import json
+from os.path import join
+from tqdm import tqdm
+
+
+def filter_non_overlapped(df_a: pd.DataFrame, df_b: pd.DataFrame):
+    """
+        filter out non-overlapped user from both domains
+    """
+    print(f'\n[info] Retaining users have interactions on both domains only...')
+
+    u_a, u_b = set(df_a['user_id'].tolist()), set(df_b['user_id'].tolist())
+    u_ab = u_a.intersection(u_b)
+
+    df_a = df_a[df_a['user_id'].isin(u_ab)]
+    df_b = df_b[df_b['user_id'].isin(u_ab)]
+
+    df_a.insert(3, 'domain', [0] * df_a.shape[0], True)
+    df_b.insert(3, 'domain', [1] * df_b.shape[0], True)
+
+    df = pd.concat([df_a, df_b]).sort_values(['user_id', 'timestamp'])
+
+    print(f'\t\tDataset remains {len(df["user_id"].unique())} users, '
+          f'{len(df_a["item_id"].unique())} A item, {df_a.shape[0]} A interactions, '
+          f'{len(df_b["item_id"].unique())} B item and {df_b.shape[0]} B interactions.')
+
+    return df
+
+
+def filter_cold_item(df: pd.DataFrame, k_i):
+    """
+        filter out items with less than k_i interactions
+    """
+    print(f'\n[info] Filtering out cold-start items less than {k_i} interactions ...')
+
+    cnt_i = df['item_id'].value_counts()
+    i_k = cnt_i[cnt_i >= k_i].index
+
+    df = df[df['item_id'].isin(i_k)]
+
+    print(f'\t\tDataset remains {len(df["user_id"].unique())} users and {len(df["item_id"].unique())} items ')
+    return df
+
+
+def trim_sequence(df: pd.DataFrame, len_max):
+    """
+        trim sequences exceeding the maximum interaction length len_max
+    """
+    print(f"\n[info] Trimming to {len_max} per user")
+
+    return df.groupby('user_id').tail(len_max)
+
+
+def filter_mono_domain_user(df: pd.DataFrame, k_u):
+    """
+        filter out user with less than k_u interactions per domain
+    """
+    df_a = df[df['domain'] == 0]
+    df_b = df[df['domain'] == 1]
+
+    cnt_u_a = df_a['user_id'].value_counts()
+    cnt_u_b = df_b['user_id'].value_counts()
+
+    u_k_a = cnt_u_a[cnt_u_a >= k_u].index
+    u_k_b = cnt_u_b[cnt_u_b >= k_u].index
+    list_u = sorted(set(u_k_a).intersection(set(u_k_b)))
+
+    df = df[df['user_id'].isin(list_u)]
+
+    print(f'\t\tDataset remains {len(df["user_id"].unique())} users, '
+          f'{len(df_a["item_id"].unique())} A items, {df_a.shape[0]} A interactions, '
+          f'{len(df_b["item_id"].unique())} B items and {df_b.shape[0]} B interactions.')
+    return df, list_u
+
+
+def reindex_consistent(df: pd.DataFrame, list_u):
+    """
+        Reindex domains with consistent item index
+    """
+    print(f"\n[info] Reindexing users and items ...")
+
+    map_u = {u: idx for idx, u in enumerate(list_u)}
+
+    df_a = df[df['domain'] == 0]
+    df_b = df[df['domain'] == 1]
+
+    items_a = sorted(df_a["item_id"].unique())
+    items_b = sorted(df_b["item_id"].unique())
+
+    map_i = {}
+    for i, x in enumerate(items_a, 1):
+        map_i[x] = i
+    offset = len(items_a) + 1
+    for i, x in enumerate(items_b):
+        map_i[x] = offset + i  # domain B index consistent with A
+
+    u_list = df["user_id"].tolist()
+    i_list = df["item_id"].tolist()
+    df['user_id'] = [map_u[u] for u in u_list]
+    df['item_id'] = [map_i[i] for i in i_list]
+
+    print(f"\tDone. Users: {len(map_u)}, Items A: {len(items_a)}, Items B: {len(items_b)}")
+    return df, map_i, map_u
+
+
+def reindex_independent(df: pd.DataFrame, list_u):
+    """
+        Reindex domains with independent item index
+    """
+    print(f"\n[info] Reindexing users and items ...")
+
+    map_u = {u: idx for idx, u in enumerate(list_u)}
+    u_list = df["user_id"].tolist()
+    df['user_id'] = [map_u[u] for u in u_list]
+
+    df_a = df[df['domain'] == 0]
+    df_b = df[df['domain'] == 1]
+
+    items_a = sorted(df_a["item_id"].unique())
+    items_b = sorted(df_b["item_id"].unique())
+
+    map_i_a = {i: idx for idx, i in enumerate(items_a)}
+    map_i_b = {i: idx for idx, i in enumerate(items_b)}
+    map_i = {**map_i_a, **map_i_b}
+
+    i_list = df["item_id"].tolist()
+    df['item_id'] = [map_i[i] for i in i_list]
+
+    print(f"\tDone. Users: {len(map_u)}, Items A: {len(items_a)}, Items B: {len(items_b)}")
+    return df, map_i_a, map_i_b, map_u
+
+# def save(df, path, f_name, map_u, map_i):
+#     """ filter out users/items with less than k interactions """
+#     print(f'\n[info] Saving files to {path} ...')
+#
+#     with open(join(path, 'map_user.txt'), 'w') as f:
+#         json.dump(map_u, f)
+#     with open(join(path, 'map_item.txt'), 'w') as f:
+#         json.dump(map_i, f)
+#
+#     with open(join(path, f_name), 'w') as f:
+#         for u in tqdm(map_u.values(), desc='\t - saving sequences', leave=True):
+#             line = f'{u}'
+#             for _, ui in df[df['user_id'] == u].iterrows():
+#                 line += f' {ui["item_id"]}|{ui["timestamp"]}'
+#             f.write(line + '\n')
+#
+#     print(f'\t   Done.')
