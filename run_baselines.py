@@ -113,5 +113,5 @@ if __name__ == "__main__":
         }
     }
 
-    run_recbole(model='SASRec',dataset='abh_beauty', config_dict=config_dict)
+    run_recbole(model='SASRec',dataset='abe_50', config_dict=config_dict)
 
