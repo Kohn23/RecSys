@@ -1,6 +1,7 @@
 from utils.data.read import *
 from utils.data.filtering import *
-from utils.data.conversion import *
+from utils.data.file_conversion import *
+from utils.data.save import *
 
 IDX_PAD = 0
 
@@ -8,12 +9,17 @@ MAPPING_FILE_NAME = {
     'afo': ('Food.csv', 'Office.csv'),
     'abh': ('Beauty.csv', 'Health.csv'),
     'amv': ('Movies.csv', 'Video.csv'),
+    'abe': {'Beauty.csv', 'Electronics.csv'}
 }
 
 __all__ = [
     "read_two_domains",
     "txt_to_inter",
-    "df_to_inter",
+    "txt_to_jsons",
+    "save_as_txt_ui",
+    "save_as_txt_utsi",
+    "save_as_inter",
+    "save_as_jsons",
     "filter_non_overlapped",
     "filter_cold_item",
     "trim_sequence",

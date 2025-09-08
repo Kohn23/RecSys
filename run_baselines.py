@@ -4,6 +4,10 @@
 
 from recbole.quick_start import run_recbole
 from recbole.model.sequential_recommender import BERT4Rec, SASRec
+from recbole.trainer.trainer import Trainer
+
+# from recbole_da.quick_start import run_recbole
+from recbole_da.model.sequential_recommender import CL4SRec
 
 if __name__ == "__main__":
 
@@ -42,7 +46,7 @@ if __name__ == "__main__":
         'topk': [10],
         'valid_metric': 'MRR@10',
         'valid_metric_bigger': True,
-        'eval_batch_size': 128,
+        'eval_batch_size': 1024,
         'metric_decimal_place': 4,
 
         # Dataset Hyper Parameters
@@ -105,13 +109,16 @@ if __name__ == "__main__":
         'multi_gpus': False,
         'repeatable': True,
         'device': 'cuda',
+        # 'train_neg_sample_args': {
+        #     'distribution': 'uniform',
+        #     'sample_num': 1
+        # },
         'train_neg_sample_args': None,
         'eval_neg_sample_args': {
             'strategy': 'by',
-            'by': 100,
+            'by': 999,
             'distribution': 'uniform'
         }
     }
 
-    run_recbole(model='SASRec',dataset='abe_50', config_dict=config_dict)
-
+    run_recbole(model='SASRec', dataset='abe_electronics', config_dict=config_dict)
