@@ -1,10 +1,10 @@
 import pandas as pd
 
 
-def read_two_domains(path_a, path_b):
-    df_a = pd.read_csv(path_a, sep=',', header=None,
+def read_two_domains(file_a, file_b):
+    df_a = pd.read_csv(file_a, sep=',', header=None,
                        names=['user_id', 'item_id', 'rating', 'timestamp']).drop(columns=['rating'])
-    df_b = pd.read_csv(path_b, sep=',', header=None,
+    df_b = pd.read_csv(file_b, sep=',', header=None,
                        names=['user_id', 'item_id', 'rating', 'timestamp']).drop(columns=['rating'])
 
     # check duplicated items

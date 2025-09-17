@@ -4,10 +4,9 @@
 
 from recbole.quick_start import run_recbole
 from recbole.model.sequential_recommender import BERT4Rec, SASRec
+from recbole_cdr.model.cross_domain_recommender import bitgcf
 from recbole.trainer.trainer import Trainer
 
-# from recbole_da.quick_start import run_recbole
-from recbole_da.model.sequential_recommender import CL4SRec
 
 if __name__ == "__main__":
 
@@ -28,11 +27,11 @@ if __name__ == "__main__":
         'epochs': 300,
         'train_batch_size': 128,
         'learner': 'adam',
-        'learning_rate': 0.001,
+        'learning_rate': 0.0001,
         'eval_step': 1,
         'stopping_step': 10,
         'clip_grad_norm': None,
-        'weight_decay': 0.0,
+        'weight_decay': 5.0,
         'loss_decimal_place': 4,
 
         # Evaluation Hyper Parameters
@@ -43,7 +42,7 @@ if __name__ == "__main__":
             'group_by': 'user'
         },
         'metrics': ['Recall', 'MRR', 'NDCG', 'Hit', 'Precision'],
-        'topk': [10],
+        'topk': [5, 10],
         'valid_metric': 'MRR@10',
         'valid_metric_bigger': True,
         'eval_batch_size': 1024,
@@ -90,7 +89,7 @@ if __name__ == "__main__":
         # Model Hyper
         'n_layers': 2,
         'n_heads': 1,
-        'hidden_size': 64,
+        'hidden_size': 1,  # same with embedding
         'inner_size': 256,
         'hidden_dropout_prob': 0.2,
         'attn_dropout_prob': 0.2,
@@ -99,8 +98,7 @@ if __name__ == "__main__":
         'initializer_range': 0.02,
         'loss_type': 'CE',
         'MODEL_TYPE': 'ModelType.SEQUENTIAL',
-        'dropout_prob': 0.2,
-        'embedding_size': 50,
+        'dropout_prob': 0.5,
         'MODEL_INPUT_TYPE': 'InputType.POINTWISE',
         'eval_type': 'EvaluatorType.RANKING',
 
@@ -121,4 +119,4 @@ if __name__ == "__main__":
         }
     }
 
-    run_recbole(model='SASRec', dataset='abe_electronics', config_dict=config_dict)
+    run_recbole(model='BERT4Rec', dataset='amv_movies', config_dict=config_dict)

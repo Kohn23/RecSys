@@ -6,11 +6,11 @@ import argparse
 from utils.data import *
 from collections import defaultdict
 
-if __name__ == '__main__':
+def data_conversion():
     parser = argparse.ArgumentParser(description='CDSR Leave-One-Out Preprocess Script')
 
     # Training
-    parser.add_argument('--data', type=str, default='amv',
+    parser.add_argument('--data', type=str, default='afo',
                         help='name of the dataset')
     parser.add_argument('--k_i', type=int, default=10,
                         help='least interactions for each users/items in both domains')
@@ -47,9 +47,9 @@ if __name__ == '__main__':
     df_a = df[df['domain'] == 0]
     df_b = df[df['domain'] == 1]
 
-    # --------------TAT4SRec-----------------
-    save_as_txt_utsi(df_a, f'{save_a}/{args.data}_{file_a}_TAT')
-    save_as_txt_utsi(df_b, f'{save_b}/{args.data}_{file_b}_TAT')
+    # # --------------TAT4SRec-----------------
+    # save_as_txt_utsi(df_a, f'{save_a}/{args.data}_{file_a}_TAT')
+    # save_as_txt_utsi(df_b, f'{save_b}/{args.data}_{file_b}_TAT')
 
     # -----------MGT json saving--------------
     # dict_a = defaultdict(list)
@@ -71,3 +71,14 @@ if __name__ == '__main__':
     # -----------Bole inter saving--------------
     # save_as_inter(df_a, f'{save_a}/{args.data}_{file_a}.inter')
     # save_as_inter(df_b, f'{save_b}/{args.data}_{file_b}.inter')
+
+    # --------General user-item txt saving-------
+    save_as_txt_ui(df_a, f'{save_a}/{args.data}_{file_a}_ui.txt')
+    save_as_txt_ui(df_b, f'{save_b}/{args.data}_{file_b}_ui.txt')
+
+
+if __name__ == '__main__':
+    # data_conversion()
+
+    reindex_user_from_ui_txt(f'dataset/abh_beauty/abh_beauty_ui.txt',
+                             f'dataset/abh_beauty/abh_beauty_ui_reindex.txt')

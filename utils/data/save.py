@@ -4,7 +4,7 @@ import pandas as pd
 from collections import defaultdict
 
 
-def save_as_inter(input: pd.DataFrame, file_path):
+def save_as_inter(input: pd.DataFrame, output_file):
     """
     input: pd.DataFrame with the .inter format (drop rating)
 
@@ -16,7 +16,6 @@ def save_as_inter(input: pd.DataFrame, file_path):
     1	5985	1385337600
     ...
     """
-    output_file = f'{file_path}.inter'
 
     required_cols = ['user_id', 'item_id', 'timestamp']
     for col in required_cols:
@@ -29,7 +28,7 @@ def save_as_inter(input: pd.DataFrame, file_path):
             f.write(f"{row.user_id}\t{row.item_id}\t{row.timestamp}\n")
 
 
-def save_as_txt_ui(df: pd.DataFrame, file_path):
+def save_as_txt_ui(df: pd.DataFrame, output_file):
     """
     input: pd.DataFrame with the .inter format (drop rating)
 
@@ -40,7 +39,6 @@ def save_as_txt_ui(df: pd.DataFrame, file_path):
     1 5985
     ...
     """
-    output_file = f'{file_path}.txt'
 
     with open(output_file, 'w', encoding='utf-8') as f:
         for row in df.itertuples(index=False):

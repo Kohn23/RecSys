@@ -74,61 +74,7 @@ def filter_mono_domain_user(df: pd.DataFrame, k_u):
     return df, list_u
 
 
-def reindex_consistent(df: pd.DataFrame, list_u):
-    """
-        Reindex domains with consistent item index
-    """
-    print(f"\n[info] Reindexing users and items ...")
 
-    map_u = {u: idx for idx, u in enumerate(list_u)}
-
-    df_a = df[df['domain'] == 0]
-    df_b = df[df['domain'] == 1]
-
-    items_a = sorted(df_a["item_id"].unique())
-    items_b = sorted(df_b["item_id"].unique())
-
-    map_i = {}
-    for i, x in enumerate(items_a, 1):
-        map_i[x] = i
-    offset = len(items_a) + 1
-    for i, x in enumerate(items_b):
-        map_i[x] = offset + i  # domain B index consistent with A
-
-    u_list = df["user_id"].tolist()
-    i_list = df["item_id"].tolist()
-    df['user_id'] = [map_u[u] for u in u_list]
-    df['item_id'] = [map_i[i] for i in i_list]
-
-    print(f"\tDone. Users: {len(map_u)}, Items A: {len(items_a)}, Items B: {len(items_b)}")
-    return df, map_i, map_u
-
-
-def reindex_independent(df: pd.DataFrame, list_u):
-    """
-        Reindex domains with independent item index
-    """
-    print(f"\n[info] Reindexing users and items ...")
-
-    map_u = {u: idx for idx, u in enumerate(list_u)}
-    u_list = df["user_id"].tolist()
-    df['user_id'] = [map_u[u] for u in u_list]
-
-    df_a = df[df['domain'] == 0]
-    df_b = df[df['domain'] == 1]
-
-    items_a = sorted(df_a["item_id"].unique())
-    items_b = sorted(df_b["item_id"].unique())
-
-    map_i_a = {i: idx for idx, i in enumerate(items_a)}
-    map_i_b = {i: idx for idx, i in enumerate(items_b)}
-    map_i = {**map_i_a, **map_i_b}
-
-    i_list = df["item_id"].tolist()
-    df['item_id'] = [map_i[i] for i in i_list]
-
-    print(f"\tDone. Users: {len(map_u)}, Items A: {len(items_a)}, Items B: {len(items_b)}")
-    return df, map_i_a, map_i_b, map_u
 
 # def save(df, path, f_name, map_u, map_i):
 #     """ filter out users/items with less than k interactions """

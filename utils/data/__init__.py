@@ -2,6 +2,8 @@ from utils.data.read import *
 from utils.data.filtering import *
 from utils.data.file_conversion import *
 from utils.data.save import *
+from utils.data.count import *
+from utils.data.reindex import *
 
 IDX_PAD = 0
 
@@ -26,6 +28,10 @@ __all__ = [
     "filter_mono_domain_user",
     "reindex_consistent",
     "reindex_independent",
+    "count_item_in_TAT",
+    "count_ui_txt",
+    "reindex_item_from_processed_txt",
+    "reindex_user_from_ui_txt",
 
     "IDX_PAD",
     "MAPPING_FILE_NAME",
