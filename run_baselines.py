@@ -119,4 +119,4 @@ if __name__ == "__main__":
         }
     }
 
-    run_recbole(model='BERT4Rec', dataset='amv_movies', config_dict=config_dict)
+    run_recbole(model='FEARec', dataset='amv_movies', config_dict=config_dict)

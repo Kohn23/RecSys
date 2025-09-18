@@ -32,6 +32,7 @@ __all__ = [
     "count_ui_txt",
     "reindex_item_from_processed_txt",
     "reindex_user_from_ui_txt",
+    "reindex_item_from_ui_txt",
 
     "IDX_PAD",
     "MAPPING_FILE_NAME",

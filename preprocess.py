@@ -80,5 +80,5 @@ def data_conversion():
 if __name__ == '__main__':
     # data_conversion()
 
-    reindex_user_from_ui_txt(f'dataset/abh_beauty/abh_beauty_ui.txt',
+    reindex_item_from_ui_txt(f'dataset/abh_beauty/abh_beauty_ui.txt',
                              f'dataset/abh_beauty/abh_beauty_ui_reindex.txt')

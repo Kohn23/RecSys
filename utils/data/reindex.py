@@ -46,6 +46,21 @@ def reindex_user_from_ui_txt(input_file, output_file):
     print(f"Done! Reindexed and saved to {output_file}")
 
 
+def reindex_item_from_ui_txt(input_file, output_file):
+    """
+        reindex items to [1,n_items]
+    """
+
+    with open(input_file, "r", encoding="utf-8") as f_in, \
+            open(output_file, "w", encoding="utf-8") as f_out:
+        for line in f_in:
+            user, item = line.strip().split()
+            item = str(int(item) + 1)
+            f_out.write(user + " " + item + "\n")
+
+    print(f"Done! Reindexed and saved to {output_file}")
+
+
 
 def reindex_consistent(df: pd.DataFrame, list_u):
     """
