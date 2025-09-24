@@ -1,42 +1,56 @@
+import random
 import torch
 import torch.nn.functional as F
 from recbole.model.sequential_recommender.sasrec import SASRec
 
+from models.functional import info_nce, item_reorder, item_crop, item_mask
+
 
 class SASRecInfoNCE(SASRec):
     def __init__(self, config, dataset):
+        """
+        Note:
+            Be aware that 'loss_type' can't be none since this model inherit from a builtin model
+            , and we choose neg-sampling within mini-batch
+        """
         super().__init__(config, dataset)
-        self.temp = config.get('infonce_temp', 1.0)
+        self.temp = config['loss_temp']
+
+    def _sample_neg_items(self, pos_items, batch_size, num_negs=10):
+        """
+            in-batch neg-sampling
+        """
+        neg_items = torch.zeros(batch_size, num_negs, dtype=torch.long).to(pos_items.device)
+
+        for i in range(batch_size):
+            all_items = torch.arange(1, self.n_items).to(pos_items.device)
+
+            mask = all_items != pos_items[i]
+            candidate_neg_items = all_items[mask]
+
+            if len(candidate_neg_items) >= num_negs:
+                selected = torch.randperm(len(candidate_neg_items))[:num_negs]
+                neg_items[i] = candidate_neg_items[selected]
+            else:
+                selected = torch.randint(0, len(candidate_neg_items), (num_negs,))
+                neg_items[i] = candidate_neg_items[selected]
+
+        return neg_items
 
     def calculate_loss(self, interaction):
         """
-            calculate InfoNCE
+            Calculate InfoNCE loss using contrastive learning from CL4SR
+            ，featuring in-batch negatives
         """
-        item = interaction[self.ITEM_ID]                # [B, T] or [B]
-        neg_key = f'neg_{self.ITEM_ID}'
-        if neg_key not in interaction:
-            neg_key = 'neg_item_id'
-        neg_item = interaction[neg_key]                 # [B, T, K] or [B, K]
+        item_seq = interaction[self.ITEM_SEQ]  # [B, T]
+        item_seq_len = interaction[self.ITEM_SEQ_LEN]  # [B]
+        pos_items = interaction[self.ITEM_ID]  # [B]
+        seq_output = self.forward(item_seq, item_seq_len)  # [B, H]
 
-        seq_output = self.forward(interaction)          # [B, T, H]
-        h = seq_output
+        batch_size = item_seq.size(0)
 
-        e_pos = self.item_embedding(item)               # [B, T, H]
-        if neg_item.dim() == 2 and item.dim() == 2:
-            neg_item = neg_item.unsqueeze(1).expand(item.size(0), item.size(1), neg_item.size(-1))
+        pos_emb = self.item_embedding(pos_items)  # [B, H]
 
-        e_neg = self.item_embedding(neg_item)           # [B, T, K, H]
+        logits, labels = info_nce(seq_output, pos_emb, self.temp, batch_size, sim='dot')
 
-        pos_logits = (h * e_pos).sum(-1, keepdim=True)  # [B, T, 1]
-        neg_logits = (h.unsqueeze(2) * e_neg).sum(-1)   # [B, T, K]
-
-        logits = torch.cat([pos_logits, neg_logits], dim=-1) / self.temp  # [B, T, 1+K]
-
-        item_seq = interaction[self.ITEM_SEQ]           # [B, T]
-        valid_mask = (item > 0).float()                 # [B, T]
-
-        log_probs = F.log_softmax(logits, dim=-1)       # [B, T, 1+K]
-        loss = -(log_probs[..., 0]) * valid_mask        # [B, T]
-        loss = loss.sum() / (valid_mask.sum() + 1e-12)
-
-        return loss
+        return F.cross_entropy(logits, labels)

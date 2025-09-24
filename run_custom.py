@@ -1,245 +1,69 @@
+# general
+import os
+import sys
+import torch.nn as nn
+from typing import Type
+from logging import getLogger
+
+# configs
+from config.config_dicts import config_cdr, config_sr
+
 # single-domain
-# from recbole.config import Config
-# from recbole.data import create_dataset, data_preparation
-# from recbole.trainer import Trainer
+from recbole.config import Config
+from recbole.data import create_dataset, data_preparation
+from recbole.trainer import Trainer
+from recbole.data.transform import construct_transform
+from recbole.utils import init_logger, init_seed, set_color, get_flops
+
+from models import SASRecInfoNCE, DSER
+from trainers import DSERTrainer
+
+
+def run_single_domain(module: Type[nn.Module], trainer, dataset, config_dict):
+    config = Config(model=module, dataset=dataset, config_dict=config_dict)
+
+    init_seed(config['seed'], config['reproducibility'])
+    # logger initialization
+    init_logger(config)
+    logger = getLogger()
+    logger.info(sys.argv)
+    logger.info(config)
+
+    # data
+    dataset = create_dataset(config)
+    logger.info(dataset)
+
+    train_data, valid_data, test_data = data_preparation(config, dataset)
+
+    # model
+    model = module(config, train_data.dataset).to(config['device'])
+    logger.info(model)
+
+    # this will run forward() and unfortunately it is incompatible with some embeddings methods
+    # transform = construct_transform(config)
+    # flops = get_flops(model, dataset, config["device"], logger, transform)
+    # logger.info(set_color("FLOPs", "blue") + f": {flops}")
+
+    # train and eval
+    train = trainer(config, model)
+    best_valid_score, best_valid_result = train.fit(train_data, valid_data, show_progress=True)
+    test_result = train.evaluate(test_data)
+
+    logger.info(set_color("best valid ", "yellow") + f": {best_valid_result}")
+    logger.info(set_color("test result", "yellow") + f": {test_result}")
+
+    return test_result
+
 
 # cross-domain
 from recbole_cdr.config import CDRConfig
-from recbole_cdr.data import create_dataset, data_preparation
-from recbole_cdr.trainer import Trainer
+from recbole_cdr.data import create_dataset as create_dataset_cdr
+from recbole_cdr.data import data_preparation as data_preparation_cdr
+from recbole_cdr.trainer import CrossDomainTrainer
 
-from models import SASRecInfoNCE
 
-
-# config_dict = {
-#         # General Hyper Parameters
-#         'gpu_id': 0,
-#         'use_gpu': True,
-#         'seed': 2020,
-#         'state': 'INFO',
-#         'reproducibility': True,
-#         'show_progress': True,
-#         'save_dataset': False,
-#         'save_dataloaders': False,
-#         'benchmark_filename': None,
-#
-#         # Training Hyper Parameters
-#         'checkpoint_dir': 'saved',
-#         'epochs': 300,
-#         'train_batch_size': 128,
-#         'learner': 'adam',
-#         'learning_rate': 0.001,
-#         'eval_step': 1,
-#         'stopping_step': 10,
-#         'clip_grad_norm': None,
-#         'weight_decay': 0.0,
-#         'loss_decimal_place': 4,
-#
-#         # Evaluation Hyper Parameters
-#         'eval_args': {
-#             'split': {'LS': 'valid_and_test'},
-#             'order': 'TO',
-#             'mode': 'uni100',
-#             'group_by': 'user'
-#         },
-#         'metrics': ['Recall', 'MRR', 'NDCG', 'Hit', 'Precision'],
-#         'topk': [10],
-#         'valid_metric': 'MRR@10',
-#         'valid_metric_bigger': True,
-#         'eval_batch_size': 1024,
-#         'metric_decimal_place': 4,
-#
-#         # Dataset Hyper Parameters
-#         'field_separator': '\t',
-#         'seq_separator': ' ',
-#         'USER_ID_FIELD': 'user_id',
-#         'ITEM_ID_FIELD': 'item_id',
-#         'RATING_FIELD': 'rating',
-#         'TIME_FIELD': 'timestamp',
-#         'seq_len': None,
-#         'LABEL_FIELD': 'label',
-#         'threshold': None,
-#         'NEG_PREFIX': 'neg_',
-#         'load_col': {
-#             'inter': ['user_id', 'item_id', 'timestamp']
-#         },
-#         'unload_col': None,
-#         'unused_col': None,
-#         'additional_feat_suffix': None,
-#         'rm_dup_inter': None,
-#         'val_interval': None,
-#         'filter_inter_by_user_or_item': True,
-#         'user_inter_num_interval': [0, float('inf')],
-#         'item_inter_num_interval': [0, float('inf')],
-#         'alias_of_user_id': None,
-#         'alias_of_item_id': None,
-#         'alias_of_entity_id': None,
-#         'alias_of_relation_id': None,
-#         'preload_weight': None,
-#         'normalize_field': None,
-#         'normalize_all': None,
-#         'ITEM_LIST_LENGTH_FIELD': 'item_length',
-#         'LIST_SUFFIX': '_list',
-#         'MAX_ITEM_LIST_LENGTH': 200,
-#         'POSITION_FIELD': 'position_id',
-#         'HEAD_ENTITY_ID_FIELD': 'head_id',
-#         'TAIL_ENTITY_ID_FIELD': 'tail_id',
-#         'RELATION_ID_FIELD': 'relation_id',
-#         'ENTITY_ID_FIELD': 'entity_id',
-#
-#         # Model Hyper
-#         'n_layers': 2,
-#         'n_heads': 1,
-#         'hidden_size': 64,
-#         'inner_size': 256,
-#         'hidden_dropout_prob': 0.2,
-#         'attn_dropout_prob': 0.2,
-#         'hidden_act': 'gelu',
-#         'layer_norm_eps': 1e-12,
-#         'initializer_range': 0.02,
-#         'loss_type': 'BPR',
-#         'MODEL_TYPE': 'ModelType.SEQUENTIAL',
-#         'dropout_prob': 0.2,
-#         'embedding_size': 50,
-#         'MODEL_INPUT_TYPE': 'InputType.POINTWISE',
-#         'eval_type': 'EvaluatorType.RANKING',
-#
-#         # Other Hyper Parameters
-#         'neg_sampling': None,
-#         'multi_gpus': False,
-#         'repeatable': True,
-#         'device': 'cuda',
-#         'train_neg_sample_args': {
-#             'distribution': 'uniform',
-#             'sample_num': 1
-#         },
-#         'eval_neg_sample_args': {
-#             'strategy': 'by',
-#             'by': 999,
-#             'distribution': 'uniform'
-#         }
-#}
-
-cdr_config_dict = {
-        # General Hyper Parameters
-        'gpu_id': 0,
-        'use_gpu': True,
-        'seed': 2020,
-        'state': 'INFO',
-        'reproducibility': True,
-        'show_progress': True,
-        'save_dataset': False,
-        'save_dataloaders': False,
-        'benchmark_filename': None,
-
-        # Training Hyper Parameters
-        'checkpoint_dir': 'saved',
-        'epochs': 300,
-        'train_batch_size': 128,
-        'learner': 'adam',
-        'learning_rate': 0.001,
-        'eval_step': 1,
-        'stopping_step': 10,
-        'clip_grad_norm': None,
-        'weight_decay': 0.0,
-        'loss_decimal_place': 4,
-
-        # Evaluation Hyper Parameters
-        'eval_args': {
-            'split': {'LS': 'valid_and_test'},
-            'order': 'TO',
-            'mode': 'uni100',
-            'group_by': 'user'
-        },
-        'metrics': ['Recall', 'MRR', 'NDCG', 'Hit', 'Precision'],
-        'topk': [10],
-        'valid_metric': 'MRR@10',
-        'valid_metric_bigger': True,
-        'eval_batch_size': 1024,
-        'metric_decimal_place': 4,
-
-        # Dataset Hyper Parameters
-        'field_separator': '\t',
-        'seq_separator': ' ',
-        'USER_ID_FIELD': 'user_id',
-        'ITEM_ID_FIELD': 'item_id',
-        'RATING_FIELD': 'rating',
-        'TIME_FIELD': 'timestamp',
-        'seq_len': None,
-        'LABEL_FIELD': 'label',
-        'threshold': None,
-        'NEG_PREFIX': 'neg_',
-        'load_col': {
-            'inter': ['user_id', 'item_id', 'timestamp']
-        },
-        'unload_col': None,
-        'unused_col': None,
-        'additional_feat_suffix': None,
-        'rm_dup_inter': None,
-        'val_interval': None,
-        'filter_inter_by_user_or_item': True,
-        'user_inter_num_interval': [0, float('inf')],
-        'item_inter_num_interval': [0, float('inf')],
-        'alias_of_user_id': None,
-        'alias_of_item_id': None,
-        'alias_of_entity_id': None,
-        'alias_of_relation_id': None,
-        'preload_weight': None,
-        'normalize_field': None,
-        'normalize_all': None,
-        'ITEM_LIST_LENGTH_FIELD': 'item_length',
-        'LIST_SUFFIX': '_list',
-        'MAX_ITEM_LIST_LENGTH': 200,
-        'POSITION_FIELD': 'position_id',
-        'HEAD_ENTITY_ID_FIELD': 'head_id',
-        'TAIL_ENTITY_ID_FIELD': 'tail_id',
-        'RELATION_ID_FIELD': 'relation_id',
-        'ENTITY_ID_FIELD': 'entity_id',
-
-        # Model Hyper
-        'n_layers': 2,
-        'n_heads': 1,
-        'hidden_size': 64,
-        'inner_size': 256,
-        'hidden_dropout_prob': 0.2,
-        'attn_dropout_prob': 0.2,
-        'hidden_act': 'gelu',
-        'layer_norm_eps': 1e-12,
-        'initializer_range': 0.02,
-        'loss_type': 'BPR',
-        'MODEL_TYPE': 'ModelType.SEQUENTIAL',
-        'dropout_prob': 0.2,
-        'embedding_size': 50,
-        'MODEL_INPUT_TYPE': 'InputType.POINTWISE',
-        'eval_type': 'EvaluatorType.RANKING',
-
-        # Other Hyper Parameters
-        'neg_sampling': None,
-        'multi_gpus': False,
-        'repeatable': True,
-        'device': 'cuda',
-        'train_neg_sample_args': {
-            'distribution': 'uniform',
-            'sample_num': 1
-        },
-        'eval_neg_sample_args': {
-            'strategy': 'by',
-            'by': 999,
-            'distribution': 'uniform'
-        }
-}
-
-config = CDRConfig(model=SASRecInfoNCE, config_dict=cdr_config_dict)
-
-# 准备数据
-dataset = create_dataset(config)
-train_data, valid_data, test_data = data_preparation(config, dataset)
-
-# 初始化模型
-model = SASRecInfoNCE(config, train_data.dataset).to(config['device'])
-
-# 训练与评估
-trainer = Trainer(config, model)
-best_valid_score, best_valid_result = trainer.fit(train_data, valid_data, show_progress=True)
-test_result = trainer.evaluate(test_data)
-
+if __name__ == "__main__":
+    # debug
+    os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+    run_single_domain(module=SASRecInfoNCE, trainer=Trainer, dataset='afo_food', config_dict=config_sr)
+    # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='afo_office', config_dict=config_sr)
