@@ -4,7 +4,7 @@ DSER
 
 Reference:
     Minsung Hong et al. " DSER:Deep-Sequential Embedding for single domain Recommendation."
-    in Expert Systems With Applications 2018.
+    in Expert Systems With Applications 2022.
 
 Note:
     This model has two separate parts: Doc2Vec and GMF + MLP
@@ -36,7 +36,7 @@ class DSER(GeneralRecommender):
 
         # Model parameters
         self.embedding_size = config['embedding_size']
-        self.mlp_layers = config['mlp_layers']
+        self.mlp_layers = config['mlp_hidden_size']
         self.dropout_prob = config['dropout_prob']
 
         # Model components

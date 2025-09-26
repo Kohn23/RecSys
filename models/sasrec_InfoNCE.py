@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from recbole.model.sequential_recommender.sasrec import SASRec
 
-from models.functional import info_nce, item_reorder, item_crop, item_mask
+from models.functional import info_nce
 
 
 class SASRecInfoNCE(SASRec):
@@ -14,7 +14,7 @@ class SASRecInfoNCE(SASRec):
             , and we choose neg-sampling within mini-batch
         """
         super().__init__(config, dataset)
-        self.temp = config['loss_temp']
+        self.tau = config['tau']
 
     def _sample_neg_items(self, pos_items, batch_size, num_negs=10):
         """
@@ -51,6 +51,6 @@ class SASRecInfoNCE(SASRec):
 
         pos_emb = self.item_embedding(pos_items)  # [B, H]
 
-        logits, labels = info_nce(seq_output, pos_emb, self.temp, batch_size, sim='dot')
+        logits, labels = info_nce(seq_output, pos_emb, self.tau, batch_size, sim='dot')
 
         return F.cross_entropy(logits, labels)

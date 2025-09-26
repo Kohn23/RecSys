@@ -86,17 +86,23 @@ config_sr = {
         # Models
         # General
         'initializer_range': 0.02,
-        'loss_type': 'CE',
-        'loss_temp': 0.05,
         'MODEL_TYPE': 'ModelType.SEQUENTIAL',
         'MODEL_INPUT_TYPE': 'InputType.POINTWISE',
         'eval_type': 'EvaluatorType.RANKING',
 
-        # TransformerEncoder
-        'n_layers': 1,
+        # Embedding
+        # Not for Encoders
+        'embedding_size': 8,
+
+        # mlp
+        'mlp_hidden_size': [64, 32, 16],  # it's layers of mlp
+        'dropout_prob': 0,
+
+        # TransformerEncoder/FEAEncoder
+        'n_layers': 1,  # cannot be 1 when using FEAEncoder
         'n_heads': 8,
         'hidden_size': 256,  # same with embedding
-        'inner_size': 256, # feedforward size
+        'inner_size': 256,   # feedforward size
         'hidden_dropout_prob': 0.5,
         'attn_dropout_prob': 0.5,
         'hidden_act': 'gelu',
@@ -109,10 +115,15 @@ config_sr = {
         'doc2vec_epochs': 10,
         'doc2vec_dm': 1,
 
-        # DSER
-        'embedding_size': 8,
-        'mlp_layers': [64, 32, 16],
-        'dropout_prob': 0,
+        # Loss
+        'loss_type': 'CE',
+        'lmd': 0.5,         # main loss weight
+        # infoNCE
+        'sim': 'dot',       # 'dot' or 'cos'
+        'tau': 0.1,        # temperature
+        # frequency domain
+        # 'fredom': False,
+        # 'fredom_type': None,    # 'us','un','su','us_x'
 
 
         # Other Hyper Parameters
@@ -148,18 +159,17 @@ config_cdr = {
         "save_dataloaders": False,
         "dataloaders_save_path": None,
         "log_wandb": False,
-        "wandb_project": "recbole_cdr",
 
         # Training
         "train_epochs": ["BOTH:300"],
-        "train_batch_size": 2048,
+        "train_batch_size": 256,
         "learner": "adam",
         "learning_rate": 0.001,
         "neg_sampling": {
             "uniform": 1,
         },
         "eval_step": 1,
-        "stopping_step": 10,
+        "stopping_step": 5,
         "clip_grad_norm": None,
         # "clip_grad_norm": {"max_norm": 5, "norm_type": 2},  # if necessary
         "weight_decay": 0.0,
@@ -172,11 +182,11 @@ config_cdr = {
             "split_valid": {"RS": [0.8, 0.2]},
             "group_by": "user",
             "order": "RO",
-            "mode": "full",
+            "mode": "full",  # this should be a dict:{"valid": "full", "test": "full"}, otherwise applied to both phase
         },
         "repeatable": False,
-        "metrics": ["Recall", "MRR", "NDCG", "Hit", "Precision"],
-        "topk": [10],
+        "metrics": ["Recall", "MRR", "NDCG", "Hit"],
+        "topk": [5, 10],
         "valid_metric": "MRR@10",
         "valid_metric_bigger": True,
         "eval_batch_size": 4096,
@@ -185,7 +195,7 @@ config_cdr = {
         # Dataset
         "field_separator": "\t",
         "source_domain": {
-            "dataset": "ml-1m",
+            "dataset": "abh_beauty",
             "data_path": "dataset/",
             "seq_separator": " ",
             "USER_ID_FIELD": "user_id",
@@ -205,7 +215,7 @@ config_cdr = {
             "drop_filter_field": True,
         },
         "target_domain": {
-            "dataset": "ml-100k",
+            "dataset": "abh_health",
             "data_path": "dataset/",
             "seq_separator": ",",
             "USER_ID_FIELD": "user_id",
@@ -224,4 +234,45 @@ config_cdr = {
             },
             "drop_filter_field": True,
         },
+
+        # Models
+        # General
+        'initializer_range': 0.02,
+        # 'MODEL_TYPE': 'ModelType.CROSSDOMAIN',
+        'MODEL_INPUT_TYPE': 'InputType.POINTWISE',
+        'eval_type': 'EvaluatorType.RANKING',
+
+        # Embedding
+        'embedding_size': 8,
+
+        # mlp
+        'mlp_hidden_size': [64, 32, 16],  # it's layers of mlp
+        'dropout_prob': 0,
+
+        # TransformerEncoder/FEAEncoder
+        'n_layers': 2,  # cannot be 1 when using FEAEncoder
+        'n_heads': 8,
+        'hidden_size': 256,  # same with embedding
+        'inner_size': 256,   # feedforward size
+        'hidden_dropout_prob': 0.5,
+        'attn_dropout_prob': 0.5,
+        'hidden_act': 'gelu',
+        'layer_norm_eps': 1e-12,
+
+        # Doc2Vec
+        'doc2vec_vector_size': 100,
+        'doc2vec_window': 5,
+        'doc2vec_min_count': 1,
+        'doc2vec_epochs': 10,
+        'doc2vec_dm': 1,
+
+        # Loss
+        'loss_type': 'CE',
+        'lmd': 0.5,         # main loss weight
+        # infoNCE
+        'sim': 'dot',       # 'dot' or 'cos'
+        'tau': 0.1,        # temperature
+        # frequency domain
+        # 'fredom': False,
+        # 'fredom_type': None,    # 'us','un','su','us_x'
 }

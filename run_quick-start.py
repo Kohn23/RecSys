@@ -4,9 +4,13 @@
 from recbole_cdr.quick_start import run_recbole_cdr
 from recbole.quick_start import run_recbole
 from config.config_dicts import config_sr, config_cdr
-from recbole.model.sequential_recommender import SASRec, FEARec
-from recbole_da.model.sequential_recommender import CL4SRec
+from recbole.model.sequential_recommender import BERT4Rec, FEARec
+from recbole_cdr.model.cross_domain_recommender.conet import CoNet
+
 
 if __name__ == "__main__":
 
-    run_recbole(model='BERT4Rec', dataset='abh_beauty', config_dict=config_sr)
+    run_recbole(model='FEARec', dataset='abh_beauty', config_dict=config_sr)
+
+    # don't run this
+    # run_recbole_cdr(model='CoNet', config_dict=config_cdr)
