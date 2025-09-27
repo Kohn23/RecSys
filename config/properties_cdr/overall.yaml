@@ -1,5 +1,6 @@
 # general
 gpu_id: 0
+worker: 0
 use_gpu: True
 seed: 2022
 state: INFO
@@ -28,6 +29,7 @@ clip_grad_norm: ~
 weight_decay: 0.0
 loss_decimal_place: 4
 require_pow: False
+enable_amp: False # (bool) Whether or not to use mixed precision training.
 
 # evaluation settings
 eval_args:
@@ -43,3 +45,4 @@ valid_metric: MRR@10
 valid_metric_bigger: True
 eval_batch_size: 4096
 metric_decimal_place: 4
+

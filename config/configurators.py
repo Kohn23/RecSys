@@ -1,40 +1,16 @@
 import os
-import copy
-from recbole.config.configurator import Config
+from enum import Enum
 from recbole.evaluator import metric_types, smaller_metrics
 from recbole.utils import EvaluatorType, ModelType, InputType
+from recbole_cdr.config.configurator import CDRConfig
 
-from recbole_cdr.utils import get_model, train_mode2state
+
+from utils import train_mode2state, CrossDomainModelType
 
 
-class CDRConfigFixing(Config):
-    """ Configurator module that load the defined parameters.
-
-    Configurator module will first load the default parameters from the fixed properties_cdr in RecBole and then
-    load parameters from the external input.
-
-    Note:
-        properties_cdr is the copy of properties/ under recbole_cdr
-
-    External input supports three kind of forms: config file, command line and parameter dictionaries.
-
-    - config file: It's a file that record the parameters to be modified or added. It should be in ``yaml`` format,
-      e.g. a config file is 'example.yaml', the content is:
-
-        learning_rate: 0.001
-
-        train_batch_size: 2048
-
-    - command line: It should be in the format as '---learning_rate=0.001'
-
-    - parameter dictionaries: It should be a dict, where the key is parameter name and the value is parameter value,
-      e.g. config_dict = {'learning_rate': 0.001}
-
-    Configuration module allows the above three kind of external input format to be used together,
-    the priority order is as following:
-
-    command line > parameter dictionaries > config file
-
+class CDRConfigFixing(CDRConfig):
+    """
+    This is a fixing for CDRConfig
     """
 
     def __init__(self, model=None, config_file_list=None, config_dict=None):
@@ -62,7 +38,7 @@ class CDRConfigFixing(Config):
         self.final_config_dict = self._get_final_config_dict()
 
         # debug
-        print(self.final_config_dict['eval_args'])
+        # print(self.final_config_dict['eval_args'])
 
         self._set_default_parameters()
         self._init_device()
@@ -73,73 +49,12 @@ class CDRConfigFixing(Config):
 
         self.dataset = self._check_cross_domain()
 
-    def _check_cross_domain(self):
-        """r Check the parameters whether in the format of Cross-domain Recommendation and return the formatted dataset
-
-        """
-        assert 'source_domain' in self.final_config_dict or 'target_domain' in self.final_config_dict
-        try:
-            source_dataset_name = self.final_config_dict['source_domain']['dataset']
-            target_dataset_name = self.final_config_dict['target_domain']['dataset']
-        except KeyError:
-            raise KeyError(
-                'If you want to run cross-domain recommender, '
-                'name of both source domain and target domain should be specified in config file.'
-            )
-        if source_dataset_name == 'ml-100k' or source_dataset_name == 'ml-1m':
-            current_path = os.path.dirname(os.path.realpath(__file__))
-            self.final_config_dict['source_domain']['data_path'] = os.path.join(current_path,
-                                                                                '../dataset_example/' + source_dataset_name)
-        else:
-            if 'data_path' not in self.final_config_dict['source_domain']:
-                data_path = self.final_config_dict['data_path']
-            else:
-                data_path = self.final_config_dict['source_domain']['data_path']
-            self.final_config_dict['source_domain']['data_path'] = os.path.join(data_path, source_dataset_name)
-
-        if target_dataset_name == 'ml-100k' or target_dataset_name == 'ml-1m':
-            current_path = os.path.dirname(os.path.realpath(__file__))
-            self.final_config_dict['target_domain']['data_path'] = os.path.join(current_path,
-                                                                                '../dataset_example/' + target_dataset_name)
-        else:
-            if 'data_path' not in self.final_config_dict['target_domain']:
-                data_path = self.final_config_dict['data_path']
-            else:
-                data_path = self.final_config_dict['target_domain']['data_path']
-            self.final_config_dict['target_domain']['data_path'] = os.path.join(data_path, target_dataset_name)
-
-        self.final_config_dict['dataset'] = {'source_domain': source_dataset_name,
-                                             'target_domain': target_dataset_name}
-        return self.final_config_dict['dataset']
-
-    def _get_model_and_dataset(self, model, dataset=None):
-
-        if model is None:
-            try:
-                model = self.external_config_dict['model']
-            except KeyError:
-                raise KeyError(
-                    'model need to be specified in at least one of the these ways: '
-                    '[model variable, config file, config dict, command line] '
-                )
-        if not isinstance(model, str):
-            final_model_class = model
-            final_model = model.__name__
-        else:
-            final_model = model
-            final_model_class = get_model(final_model)
-
-        return final_model, final_model_class, None
-
     def _load_internal_config_dict(self, model, model_class, dataset):
         current_path = os.path.dirname(os.path.realpath(__file__))
-
-        # debug
-        # print(current_path)
-
         overall_init_file = os.path.join(current_path, 'properties_cdr/overall.yaml')
         model_init_file = os.path.join(current_path, 'properties_cdr/model/' + model + '.yaml')
         sample_init_file = os.path.join(current_path, 'properties_cdr/dataset/sample.yaml')
+
         self.internal_config_dict = dict()
         for file in [overall_init_file, model_init_file, sample_init_file]:
             if os.path.isfile(file):
@@ -242,67 +157,41 @@ class CDRConfigFixing(Config):
         self.final_config_dict['source_split'] = source_split_flag
         self.final_config_dict['epochs'] = int(train_epochs[0])
 
-    @staticmethod
-    def _remove_domain_prefix(config_dict):
-        if 'source_domain' not in config_dict:
-            config_dict['source_domain'] = dict()
-        if 'target_domain' not in config_dict:
-            config_dict['target_domain'] = dict()
-        for key in list(config_dict.keys()):
-            if key.startswith('source_') and not key.startswith('source_domain'):
-                config_dict['source_domain'][key[7:]] = copy.copy(config_dict[key])
-                config_dict.pop(key)
-            elif key.startswith('target_') and not key.startswith('target_domain'):
-                config_dict['target_domain'][key[7:]] = copy.copy(config_dict[key])
-                config_dict.pop(key)
+    def _convert_config_dict(self, config_dict):
+        """
+        This function convert the str parameters to their original type.
+        """
+        for key in config_dict:
+            param = config_dict[key]
+            if not isinstance(param, str):
+                continue
+
+            # fixing
+            if key == "MODEL_TYPE":
+                try:
+                    param = param.split('.')
+                    if param[0] != "CrossDomainModelType":
+                        raise ValueError(f"wrong prefix:{param[0]}")
+                    config_dict[key] = CrossDomainModelType[param[1].upper()]
+                    continue
+                except KeyError:
+                    raise ValueError(f"Unsupported model type: {param}")
+
+            try:
+                value = eval(param)
+                if value is not None and not isinstance(
+                        value, (str, int, float, list, tuple, dict, bool, Enum)
+                ):
+                    value = param
+            except (NameError, SyntaxError, TypeError):
+                if isinstance(param, str):
+                    if param.lower() == "true":
+                        value = True
+                    elif param.lower() == "false":
+                        value = False
+                    else:
+                        value = param
+                else:
+                    value = param
+            config_dict[key] = value
         return config_dict
-
-    def _merge_external_config_dict(self):
-        external_config_dict = dict()
-        external_source_config_dict, external_target_config_dict = dict(), dict()
-        external_config_dict.update(self.file_config_dict)
-        external_config_dict.update(self.variable_config_dict)
-        external_config_dict.update(self.cmd_config_dict)
-        external_source_config_dict.update(self.file_config_dict['source_domain'])
-        external_source_config_dict.update(self.variable_config_dict['source_domain'])
-        external_source_config_dict.update(self.cmd_config_dict['source_domain'])
-        external_target_config_dict.update(self.file_config_dict['target_domain'])
-        external_target_config_dict.update(self.variable_config_dict['target_domain'])
-        external_target_config_dict.update(self.cmd_config_dict['target_domain'])
-        external_config_dict['source_domain'] = external_source_config_dict
-        external_config_dict['target_domain'] = external_target_config_dict
-        self.external_config_dict = external_config_dict
-
-    def _get_final_config_dict(self):
-        final_config_dict = dict()
-        final_source_config_dict, final_target_config_dict = dict(), dict()
-        final_config_dict.update(self.internal_config_dict)
-        final_config_dict.update(self.external_config_dict)
-
-        # debug
-        print(self.internal_config_dict, self.external_config_dict)
-
-        final_source_config_dict.update(self.internal_config_dict['source_domain'])
-        final_source_config_dict.update(self.external_config_dict['source_domain'])
-        final_target_config_dict.update(self.internal_config_dict['target_domain'])
-        final_target_config_dict.update(self.external_config_dict['target_domain'])
-        final_config_dict['source_domain'] = final_source_config_dict
-        final_config_dict['target_domain'] = final_target_config_dict
-        return final_config_dict
-
-    def update(self, other_config):
-        new_config_obj = copy.deepcopy(self)
-        for key in other_config:
-            new_config_obj.final_config_dict[key] = other_config[key]
-        return new_config_obj
-
-    def compatibility_settings(self):
-        import numpy as np
-        np.bool = np.bool_
-        np.int = np.int_
-        np.float = np.float_
-        np.complex = np.complex_
-        np.object = np.object_
-        np.str = np.str_
-        np.long = np.int_
-        np.unicode = np.unicode_

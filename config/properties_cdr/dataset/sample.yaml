@@ -2,6 +2,7 @@
 gpu_id: 0
 state: INFO
 field_separator: "\t"
+numerical_features: []                # (list) Float feature fields to be embedded
 source_domain:
   dataset: ml-1m
   data_path: 'dataset/'
@@ -16,9 +17,8 @@ source_domain:
     inter: [user_id, item_id, rating]
   user_inter_num_interval: "[5,inf)"
   item_inter_num_interval: "[5,inf)"
-  val_interval:
-    rating: "[3,inf)"
   drop_filter_field: True
+
 
 target_domain:
   dataset: ml-100k
@@ -34,6 +34,4 @@ target_domain:
     inter: [user_id, item_id, rating]
   user_inter_num_interval: "[5,inf)"
   item_inter_num_interval: "[5,inf)"
-  val_interval:
-    rating: "[3,inf)"
   drop_filter_field: True

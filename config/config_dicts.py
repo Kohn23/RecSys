@@ -207,12 +207,11 @@ config_cdr = {
             "load_col": {
                 "inter": ["user_id", "item_id", "timestamp"],
             },
-            "user_inter_num_interval": "[5,inf)",
-            "item_inter_num_interval": "[5,inf)",
-            "val_interval": {
-                "rating": "[3,inf)",
-            },
-            "drop_filter_field": True,
+            # filtering args
+            # "user_inter_num_interval": "[5,inf)",
+            # "item_inter_num_interval": "[5,inf)",
+            "val_interval": None,
+            # "drop_filter_field": True,
         },
         "target_domain": {
             "dataset": "abh_health",
@@ -227,18 +226,17 @@ config_cdr = {
             "load_col": {
                 "inter": ["user_id", "item_id", "timestamp"],
             },
-            "user_inter_num_interval": "[5,inf)",
-            "item_inter_num_interval": "[5,inf)",
-            "val_interval": {
-                "rating": "[3,inf)",
-            },
-            "drop_filter_field": True,
+            # filtering args
+            # "user_inter_num_interval": "[5,inf)",
+            # "item_inter_num_interval": "[5,inf)",
+            "val_interval": None,
+            # "drop_filter_field": True,
         },
 
         # Models
         # General
         'initializer_range': 0.02,
-        # 'MODEL_TYPE': 'ModelType.CROSSDOMAIN',
+        'MODEL_TYPE': 'CrossDomainModelType.General',
         'MODEL_INPUT_TYPE': 'InputType.POINTWISE',
         'eval_type': 'EvaluatorType.RANKING',
 
@@ -275,4 +273,9 @@ config_cdr = {
         # frequency domain
         # 'fredom': False,
         # 'fredom_type': None,    # 'us','un','su','us_x'
+        'eval_neg_sample_args': {
+            'strategy': 'by',
+            'by': 999,
+            'distribution': 'uniform'
+        }
 }

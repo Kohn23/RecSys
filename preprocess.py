@@ -1,16 +1,17 @@
 """
-    run data preprocess functions here
+    run preprocess preprocess functions here
 """
 import os
 import argparse
-from utils.data import *
+from utils.preprocess import *
 from collections import defaultdict
+
 
 def data_conversion():
     parser = argparse.ArgumentParser(description='CDSR Leave-One-Out Preprocess Script')
 
     # Training
-    parser.add_argument('--data', type=str, default='afo',
+    parser.add_argument('--preprocess', type=str, default='afo',
                         help='name of the dataset')
     parser.add_argument('--k_i', type=int, default=10,
                         help='least interactions for each users/items in both domains')
@@ -48,8 +49,8 @@ def data_conversion():
     df_b = df[df['domain'] == 1]
 
     # # --------------TAT4SRec-----------------
-    # save_as_txt_utsi(df_a, f'{save_a}/{args.data}_{file_a}_TAT')
-    # save_as_txt_utsi(df_b, f'{save_b}/{args.data}_{file_b}_TAT')
+    # save_as_txt_utsi(df_a, f'{save_a}/{args.preprocess}_{file_a}_TAT')
+    # save_as_txt_utsi(df_b, f'{save_b}/{args.preprocess}_{file_b}_TAT')
 
     # -----------MGT json saving--------------
     # dict_a = defaultdict(list)
@@ -69,8 +70,8 @@ def data_conversion():
     # # # save_as_jsons(dict_b, f'{save_b}/jsons')
 
     # -----------Bole inter saving--------------
-    # save_as_inter(df_a, f'{save_a}/{args.data}_{file_a}.inter')
-    # save_as_inter(df_b, f'{save_b}/{args.data}_{file_b}.inter')
+    # save_as_inter(df_a, f'{save_a}/{args.preprocess}_{file_a}.inter')
+    # save_as_inter(df_b, f'{save_b}/{args.preprocess}_{file_b}.inter')
 
     # --------General user-item txt saving-------
     save_as_txt_ui(df_a, f'{save_a}/{args.data}_{file_a}_ui.txt')

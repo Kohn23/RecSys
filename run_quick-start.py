@@ -10,7 +10,7 @@ from recbole_cdr.model.cross_domain_recommender.conet import CoNet
 
 if __name__ == "__main__":
 
-    run_recbole(model='FEARec', dataset='abh_beauty', config_dict=config_sr)
+    run_recbole(model='BERT4Rec', dataset='abh_health', config_dict=config_sr)
 
     # don't run this
     # run_recbole_cdr(model='CoNet', config_dict=config_cdr)
