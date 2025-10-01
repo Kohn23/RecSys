@@ -25,7 +25,7 @@ class DSER(GeneralRecommender):
     def __init__(self, config, dataset):
         super().__init__(config, dataset)
         self.dataset = dataset
-        self.LABEL = config["LABEL_FIELD"]
+        # self.LABEL = config["LABEL_FIELD"]
 
         # Doc2Vec parameters
         self.doc2vec_vector_size = config['doc2vec_vector_size']

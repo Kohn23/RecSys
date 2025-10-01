@@ -99,8 +99,8 @@ config_sr = {
         'dropout_prob': 0,
 
         # TransformerEncoder/FEAEncoder
-        'n_layers': 1,  # cannot be 1 when using FEAEncoder
-        'n_heads': 8,
+        'n_layers': 2,  # cannot be 1 when using FEAEncoder
+        'n_heads': 4,
         'hidden_size': 256,  # same with embedding
         'inner_size': 256,   # feedforward size
         'hidden_dropout_prob': 0.5,

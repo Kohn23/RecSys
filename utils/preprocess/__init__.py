@@ -11,11 +11,14 @@ MAPPING_FILE_NAME = {
     'afo': ('Food.csv', 'Office.csv'),
     'abh': ('Beauty.csv', 'Health.csv'),
     'amv': ('Movies.csv', 'Video.csv'),
-    'abe': {'Beauty.csv', 'Electronics.csv'}
+    'abe': {'Beauty.csv', 'Electronics.csv'},
+    'afo_23': ('Food.csv', 'Office.csv'),
+    'abh_23': ('Beauty.csv', 'Health.csv'),
+    'abh_test': ('Beauty.csv', 'Health.csv'),
 }
 
 __all__ = [
-    "read_two_domains",
+    "read_raw",
     "txt_to_inter",
     "txt_to_jsons",
     "save_as_txt_ui",

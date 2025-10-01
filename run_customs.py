@@ -105,5 +105,5 @@ if __name__ == "__main__":
     # debug
     os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     # run_single_domain(module=SASRecInfoNCE, trainer=Trainer, dataset='amv_video', config_dict=config_sr)
-    # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='afo_office', config_dict=config_sr)
-    run_cross_domain(module=DTCDR, trainer=CrossDomainTrainer, config_dict=config_cdr)
+    run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abh_health', config_dict=config_sr)
+    # run_cross_domain(module=DTCDR, trainer=CrossDomainTrainer, config_dict=config_cdr)

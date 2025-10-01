@@ -48,14 +48,18 @@ def trim_sequence(df: pd.DataFrame, len_max):
         trim sequences exceeding the maximum interaction length len_max
     """
     print(f"\n[info] Trimming to {len_max} per user")
+    df = df.groupby('user_id').tail(len_max)
+    print(f'\t\tDataset remains {len(df["user_id"].unique())} users and {len(df["item_id"].unique())} items ')
 
-    return df.groupby('user_id').tail(len_max)
+    return df
 
 
 def filter_mono_domain_user(df: pd.DataFrame, k_u):
     """
         filter out user with less than k_u interactions per domain
     """
+    print(f"\n[info] filtering mono domain user with less than {k_u} interactions each")
+
     df_a = df[df['domain'] == 0]
     df_b = df[df['domain'] == 1]
 
@@ -73,23 +77,3 @@ def filter_mono_domain_user(df: pd.DataFrame, k_u):
           f'{len(df_b["item_id"].unique())} B items and {df_b.shape[0]} B interactions.')
     return df, list_u
 
-
-
-
-# def save(df, path, f_name, map_u, map_i):
-#     """ filter out users/items with less than k interactions """
-#     print(f'\n[info] Saving files to {path} ...')
-#
-#     with open(join(path, 'map_user.txt'), 'w') as f:
-#         json.dump(map_u, f)
-#     with open(join(path, 'map_item.txt'), 'w') as f:
-#         json.dump(map_i, f)
-#
-#     with open(join(path, f_name), 'w') as f:
-#         for u in tqdm(map_u.values(), desc='\t - saving sequences', leave=True):
-#             line = f'{u}'
-#             for _, ui in df[df['user_id'] == u].iterrows():
-#                 line += f' {ui["item_id"]}|{ui["timestamp"]}'
-#             f.write(line + '\n')
-#
-#     print(f'\t   Done.')
