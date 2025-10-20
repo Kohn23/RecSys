@@ -1,0 +1,16 @@
+#MODEL_TYPE:  'ModelType.SEQUENTIAL'
+MODEL_INPUT_TYPE: 'InputType.POINTWISE'
+eval_type: 'EvaluatorType.RANKING'
+loss_type: 'CE' # this has no effect
+
+initializer_range: 0.02
+
+embedding_size: 8
+doc2vec_vector_size: 100
+doc2vec_window: 5
+doc2vec_min_count: 1
+doc2vec_epochs: 10
+doc2vec_dm: 1
+
+mlp_hidden_size: [64, 32, 16]
+dropout_prob: 0

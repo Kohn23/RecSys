@@ -144,6 +144,7 @@ class DSER(GeneralRecommender):
 
         return final_output.squeeze()
 
+    # TODO：Should use standard methods
     def calculate_loss(self, interaction):
         """Calculate binary cross-entropy loss with neg-sampling"""
         pos_scores = self.forward(interaction)
