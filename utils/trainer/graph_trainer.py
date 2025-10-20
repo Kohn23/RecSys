@@ -1,5 +1,5 @@
 """
-    Trainers from RecBole-GNN
+    Trainers for GNN-based models
 """
 
 from time import time

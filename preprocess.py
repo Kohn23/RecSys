@@ -10,12 +10,11 @@ from collections import defaultdict
 def process_raw():
     parser = argparse.ArgumentParser(description='CDSR Leave-One-Out Preprocess Script')
 
-    # Training
-    parser.add_argument('--prefix', type=str, default='abh_test',
+    parser.add_argument('--prefix', type=str, default='amb',
                         help='name of the dataset')
     parser.add_argument('--k_i', type=int, default=10,
                         help='least interactions for each users/items in both domains')
-    parser.add_argument('--k_u', type=int, default=1,
+    parser.add_argument('--k_u', type=int, default=5,
                         help='least interactions for each users/items in each domain')
     parser.add_argument('--len_max', type=int, default=50,
                         help='max interactions for each users/items in each domain')
@@ -23,10 +22,8 @@ def process_raw():
 
     (file_a, file_b) = MAPPING_FILE_NAME[args.prefix]
 
-    path_a = f'dataset/raw/amazon-dataset-2023/{file_a}'
-    path_b = f'dataset/raw/amazon-dataset-2023/{file_b}'
-    # path_a = f'dataset/raw/Amazon-Dataset-Raw/{file_a}'
-    # path_b = f'dataset/raw/Amazon-Dataset-Raw/{file_b}'
+    path_a = f'dataset/raw/amazon-reviews-2018/{file_a}'
+    path_b = f'dataset/raw/amazon-reviews-2018/{file_b}'
 
     file_a = file_a.split('.')[0].lower()
     file_b = file_b.split('.')[0].lower()
@@ -41,10 +38,11 @@ def process_raw():
     if args.prefix in MAPPING_FILE_NAME.keys():
         print(f'\n[info] Start preprocessing "{args.prefix}" dataset...')
 
+        col_names = ['user_id', 'item_id', 'rating', 'timestamp']
         rename_cols = {'parent_asin':'item_id'}
         select_cols = ['user_id', 'item_id', 'timestamp']
 
-        df_a, df_b = read_raw(path_a, path_b, select_cols=select_cols, rename_cols=rename_cols)
+        df_a, df_b = read_raw(path_a, path_b, name_cols=col_names, select_cols=select_cols, rename_cols=rename_cols)
     else:
         raise NotImplementedError(f'Selected dataset "{args.prefix}" is not supported.')
 

@@ -23,12 +23,13 @@ def _detect_format(filename: str) -> str:
 
 def _read_single(file: str,
                 file_type: str = None,
+                name_cols: list = None,
                 select_cols: list = None,
                 rename_cols: dict = None):
     if file_type == 'jsonl' or file_type == 'json':
         df = pd.read_json(file, lines=True)
     else:
-        df = pd.read_csv(file, sep=',')
+        df = pd.read_csv(file, names=name_cols, sep=',')
 
     if rename_cols is not None:
         df = df.rename(columns=rename_cols)
@@ -41,31 +42,33 @@ def _read_single(file: str,
 
 def _read_double(file_a: str, file_b: str = None,
                 file_type: str = None,
+                name_cols: list = None,
                 select_cols: list = None,
                 rename_cols: dict = None):
     """
         read domains and make cross-domain
     """
 
-    df_a = _read_single(file_a, file_type, select_cols, rename_cols)
+    df_a = _read_single(file_a, file_type, name_cols, select_cols, rename_cols)
     print(df_a.head())
 
     if file_b is None:
         return df_a, None
 
-    df_b = _read_single(file_b, file_type, select_cols, rename_cols)
+    df_b = _read_single(file_b, file_type, name_cols, select_cols, rename_cols)
 
     return _check_duplicated_items(df_a, df_b)
 
 
 def read_raw(file_a: str, file_b: str = None,
              file_type: str = None,
+             name_cols: list = None,
              select_cols: list = None,
              rename_cols: dict = None):
 
     if file_type is None:
         file_type = _detect_format(file_a)
 
-    return _read_double(file_a, file_b, file_type, select_cols, rename_cols)
+    return _read_double(file_a, file_b, file_type, name_cols, select_cols, rename_cols)
 
 

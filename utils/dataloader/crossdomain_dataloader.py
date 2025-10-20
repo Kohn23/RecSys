@@ -2,6 +2,7 @@ from logging import getLogger
 import numpy as np
 import torch
 
+import torch.utils.data.dataloader
 from recbole.data.interaction import Interaction
 from recbole.data.dataloader import AbstractDataLoader, TrainDataLoader, FullSortEvalDataLoader
 

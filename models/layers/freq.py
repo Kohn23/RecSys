@@ -1,4 +1,3 @@
-
 import math
 import torch
 import torch.nn as nn
@@ -7,7 +6,7 @@ import torch.fft as fft
 
 class BandedFourierLayer(nn.Module):
     """
-
+        Fourier Block from CLF4SRec
     """
     def __init__(self, in_channels, out_channels, band, num_bands, length=201):
         super().__init__()

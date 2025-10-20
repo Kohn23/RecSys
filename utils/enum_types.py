@@ -25,3 +25,16 @@ train_mode2state = {'BOTH': CrossDomainDataLoaderState.BOTH,
                     'SOURCE': CrossDomainDataLoaderState.SOURCE,
                     'TARGET': CrossDomainDataLoaderState.TARGET,
                     'OVERLAP': CrossDomainDataLoaderState.OVERLAP}
+
+
+class DataLoaderType(Enum):
+    """Type of DataLoaders.
+
+    - ``ORIGIN``: Original DataLoader
+    - ``FULL``: DataLoader for full-sort evaluation
+    - ``NEGSAMPLE``: DataLoader for negative sample evaluation
+    """
+
+    ORIGIN = 1
+    FULL = 2
+    NEGSAMPLE = 3

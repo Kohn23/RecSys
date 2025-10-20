@@ -1,1 +1,1 @@
-from trainers.DSERTrainer import DSERTrainer
+from utils.trainer.general_trainer import DSERTrainer

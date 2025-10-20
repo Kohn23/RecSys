@@ -11,9 +11,13 @@ MAPPING_FILE_NAME = {
     'afo': ('Food.csv', 'Office.csv'),
     'abh': ('Beauty.csv', 'Health.csv'),
     'amv': ('Movies.csv', 'Video.csv'),
-    'abe': {'Beauty.csv', 'Electronics.csv'},
+    'abe': ('Beauty.csv', 'Electronics.csv'),
+    'afk': ('Food.csv', 'Kitchen.csv'),
+    'amb': ('Movies.csv', 'Books.csv'),
     'afo_23': ('Food.csv', 'Office.csv'),
-    'abh_23': ('Beauty.csv', 'Health.csv'),
+    'abh_23': ('Beauty_and_PC.csv', 'Health_and_PC.csv'),
+    'abe_23': ('Beauty_and_PC.csv', 'Electronics.csv'),
+    'amb_23': ('Movies.csv', 'Books.csv'),
     'abh_test': ('Beauty.csv', 'Health.csv'),
 }
 

@@ -36,6 +36,9 @@ class SimDCL(SequentialRecommender):
         self.hidden_act = config['hidden_act']
         self.layer_norm_eps = config['layer_norm_eps']
 
+        # GNNEncoder
+        self.n_layers_gnn = config['n_layers_gnn']
+
         # noise
         self.noise_ratio = config['noise_ratio']  # K
         self.filter_threshold = config['filter_threshold']  # φ
@@ -62,7 +65,7 @@ class SimDCL(SequentialRecommender):
 
         self.gnn_encoder = SequenceGraphEncoder(
             hidden_size=self.hidden_size,
-            num_layers=self.n_layers
+            num_layers=self.n_layers_gnn
         )
 
         self.loss_fct = nn.CrossEntropyLoss()

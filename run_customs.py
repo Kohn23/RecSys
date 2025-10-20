@@ -5,20 +5,19 @@ import torch.nn as nn
 from typing import Type
 from logging import getLogger
 
-from recbole.utils import init_logger, init_seed, set_color, get_flops
+from recbole.utils import init_logger, init_seed, set_color
 from utils.logger import *
 
 
 # configs
-from config.config_dicts import config_cdr, config_sr
+from config.config_dicts import config_sr
 
 # single-domain
 from recbole.config import Config
 from recbole.data import create_dataset, data_preparation
 from recbole.trainer import Trainer
-from recbole.data.transform import construct_transform
-from models import SASRecInfoNCE, DSER
-from trainers import DSERTrainer
+from utils.trainer import DSERTrainer
+from models import SASRecInfoNCE, DSER, CLF4SRec
 
 
 def run_single_domain(module: Type[nn.Module], trainer, dataset, config_dict):
@@ -58,13 +57,10 @@ def run_single_domain(module: Type[nn.Module], trainer, dataset, config_dict):
 
 
 # cross-domain
-from recbole_cdr.trainer import CrossDomainTrainer
-from recbole_cdr.model.cross_domain_recommender.dtcdr import DTCDR
 
 from config.configurators import CDRConfigFixing
 from utils.dataset import create_dataset_cdr
 from utils.dataloader import data_preparation_cdr
-
 
 # dataset settings are in config_dict
 def run_cross_domain(module: Type[nn.Module], trainer, config_dict):
@@ -104,6 +100,6 @@ def run_cross_domain(module: Type[nn.Module], trainer, config_dict):
 if __name__ == "__main__":
     # debug
     os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-    # run_single_domain(module=SASRecInfoNCE, trainer=Trainer, dataset='amv_video', config_dict=config_sr)
-    run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abh_health', config_dict=config_sr)
+    run_single_domain(module=SASRecInfoNCE, trainer=Trainer, dataset='afo_50', config_dict=config_sr)
+    # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abe_23_beauty_and_pc', config_dict=config_sr)
     # run_cross_domain(module=DTCDR, trainer=CrossDomainTrainer, config_dict=config_cdr)

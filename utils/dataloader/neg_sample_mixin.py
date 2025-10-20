@@ -13,7 +13,8 @@ recbole.data.dataloader.neg_sample_mixin
 """
 
 from recbole.data.dataloader.abstract_dataloader import AbstractDataLoader
-from recbole.utils import DataLoaderType, EvaluatorType, FeatureSource, FeatureType, InputType
+from recbole.utils import EvaluatorType, FeatureSource, FeatureType, InputType
+from utils import DataLoaderType
 
 
 class NegSampleMixin(AbstractDataLoader):

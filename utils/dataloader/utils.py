@@ -5,7 +5,7 @@ from recbole_cdr.sampler import CrossDomainSourceSampler
 from recbole_cdr.data.utils import create_source_samplers
 
 # fixing
-from utils.dataloader.cross_domain_dataloader import *
+from utils.dataloader.crossdomain_dataloader import *
 from utils import CrossDomainModelType
 
 

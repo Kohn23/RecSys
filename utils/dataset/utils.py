@@ -13,7 +13,7 @@ def create_dataset_cdr(config):
     """
     # dataset_module = importlib.import_module('recbole_cdr.data.dataset')
     # fixing
-    from utils.dataset import cross_dmain_datasets as dataset_module
+    from utils.dataset import crossdomain_datasets as dataset_module
 
     if hasattr(dataset_module, config['model'] + 'Dataset'):
         dataset_class = getattr(dataset_module, config['model'] + 'Dataset')
