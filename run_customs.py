@@ -32,6 +32,7 @@ def run_single_domain(module: Type[nn.Module], trainer, dataset, config_file_lis
     dataset = create_dataset(config)
     logger.info(dataset)
 
+    # TODO: find a way to unify creating dataloader
     train_data, valid_data, test_data = data_preparation(config, dataset)
 
     # model

@@ -1,35 +1,41 @@
 # -*- coding: utf-8 -*-
 
 """
-CLF4SRec
+CL4SRec
 ################################################
 
 Reference:
-     Yichi Zhang et al. "Contrastive Learning with Frequency Domain for Sequential Recommendation."
-     in Applied Soft Computing 2023.
+    Wang-Cheng Kang et al. "Contrastive Learning for Sequential Recommendation." in ICDE 2022.
 
 Reference:
-
+    https://github.com/JamZheng/CL4SRec-pytorch
 
 """
 
+import math
+import random
+
+import numpy as np
 import torch
 from torch import nn
+
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import TransformerEncoder
 from recbole.model.loss import BPRLoss
-from models.layers import BandedFourierLayer
-
-from models.functional import info_nce
 
 
-class CLF4SRec(SequentialRecommender):
+class CL4SRec(SequentialRecommender):
     r"""
+    SASRec is the first sequential recommender based on self-attentive mechanism.
 
+    NOTE:
+        In the author's implementation, the Point-Wise Feed-Forward Network (PFFN) is implemented
+        by CNN with 1x1 kernel. In this implementation, we follows the original BERT implementation
+        using Fully Connected Layer to implement the PFFN.
     """
 
     def __init__(self, config, dataset):
-        super(CLF4SRec, self).__init__(config, dataset)
+        super(CL4SRec, self).__init__(config, dataset)
 
         # load parameters info
         self.n_layers = config['n_layers']
@@ -43,12 +49,8 @@ class CLF4SRec(SequentialRecommender):
 
         self.batch_size = config['train_batch_size']
         self.lmd = config['lmd']
-        self.lmd_tf = config['lmd_tf']
         self.tau = config['tau']
         self.sim = config['sim']
-
-        self.tau_plus = config['tau_plus']
-        self.beta = config['beta']
 
         self.initializer_range = config['initializer_range']
         self.loss_type = config['loss_type']
@@ -67,7 +69,6 @@ class CLF4SRec(SequentialRecommender):
             layer_norm_eps=self.layer_norm_eps
         )
 
-        self.fft_layer = BandedFourierLayer(self.hidden_size, self.hidden_size, 0, 1, length=self.max_seq_length)
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
 
@@ -112,6 +113,67 @@ class CLF4SRec(SequentialRecommender):
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
         return extended_attention_mask
 
+    def augment(self, item_seq, item_seq_len):
+        aug_seq1 = []
+        aug_len1 = []
+        aug_seq2 = []
+        aug_len2 = []
+        for seq, length in zip(item_seq, item_seq_len):
+            if length > 1:
+                switch = random.sample(range(3), k=2)
+            else:
+                switch = [3, 3]
+                aug_seq = seq
+                aug_len = length
+            if switch[0] == 0:
+                aug_seq, aug_len = self.item_crop(seq, length)
+            elif switch[0] == 1:
+                aug_seq, aug_len = self.item_mask(seq, length)
+            elif switch[0] == 2:
+                aug_seq, aug_len = self.item_reorder(seq, length)
+
+            aug_seq1.append(aug_seq)
+            aug_len1.append(aug_len)
+
+            if switch[1] == 0:
+                aug_seq, aug_len = self.item_crop(seq, length)
+            elif switch[1] == 1:
+                aug_seq, aug_len = self.item_mask(seq, length)
+            elif switch[1] == 2:
+                aug_seq, aug_len = self.item_reorder(seq, length)
+
+            aug_seq2.append(aug_seq)
+            aug_len2.append(aug_len)
+
+        return torch.stack(aug_seq1), torch.stack(aug_len1), torch.stack(aug_seq2), torch.stack(aug_len2)
+
+    def item_crop(self, item_seq, item_seq_len, eta=0.6):
+        num_left = math.floor(item_seq_len * eta)
+        crop_begin = random.randint(0, item_seq_len - num_left)
+        croped_item_seq = np.zeros(item_seq.shape[0])
+        if crop_begin + num_left < item_seq.shape[0]:
+            croped_item_seq[:num_left] = item_seq.cpu().detach().numpy()[crop_begin:crop_begin + num_left]
+        else:
+            croped_item_seq[:num_left] = item_seq.cpu().detach().numpy()[crop_begin:]
+        return torch.tensor(croped_item_seq, dtype=torch.long, device=item_seq.device), \
+            torch.tensor(num_left, dtype=torch.long, device=item_seq.device)
+
+    def item_mask(self, item_seq, item_seq_len, gamma=0.3):
+        num_mask = math.floor(item_seq_len * gamma)
+        mask_index = random.sample(range(item_seq_len), k=num_mask)
+        masked_item_seq = item_seq.cpu().detach().numpy().copy()
+        masked_item_seq[mask_index] = self.n_items  # token 0 has been used for semantic masking
+        return torch.tensor(masked_item_seq, dtype=torch.long, device=item_seq.device), item_seq_len
+
+    def item_reorder(self, item_seq, item_seq_len, beta=0.6):
+        num_reorder = math.floor(item_seq_len * beta)
+        reorder_begin = random.randint(0, item_seq_len - num_reorder)
+        reordered_item_seq = item_seq.cpu().detach().numpy().copy()
+        shuffle_index = list(range(reorder_begin, reorder_begin + num_reorder))
+        random.shuffle(shuffle_index)
+        reordered_item_seq[reorder_begin:reorder_begin + num_reorder] = reordered_item_seq[shuffle_index]
+        return torch.tensor(reordered_item_seq, dtype=torch.long, device=item_seq.device), item_seq_len
+
     def forward(self, item_seq, item_seq_len):
         position_ids = torch.arange(item_seq.size(1), dtype=torch.long, device=item_seq.device)
         position_ids = position_ids.unsqueeze(0).expand_as(item_seq)
@@ -125,75 +187,47 @@ class CLF4SRec(SequentialRecommender):
         extended_attention_mask = self.get_attention_mask(item_seq)
 
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=True)
-        output_t = trm_output[-1]
-        output_t = self.gather_indexes(output_t, item_seq_len - 1)
-
-        output_f = self.fft_layer(input_emb)
-        trm_output_f = self.trm_encoder(output_f, extended_attention_mask, output_all_encoded_layers=True)
-        output_f = trm_output_f[-1]
-        output_f = self.gather_indexes(output_f, item_seq_len - 1)
-
-        return output_t, output_f  # [B H]
-
-    def my_fft(self, seq):
-        f = torch.fft.rfft(seq, dim=1)
-        amp = torch.absolute(f)
-        phase = torch.angle(f)
-        return amp, phase
+        output = trm_output[-1]
+        output = self.gather_indexes(output, item_seq_len - 1)
+        return output  # [B H]
 
     def calculate_loss(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
-        seq_output_t, seq_output_f = self.forward(item_seq, item_seq_len)
+        seq_output = self.forward(item_seq, item_seq_len)
         pos_items = interaction[self.POS_ITEM_ID]
-
         if self.loss_type == 'BPR':
             neg_items = interaction[self.NEG_ITEM_ID]
             pos_items_emb = self.item_embedding(pos_items)
             neg_items_emb = self.item_embedding(neg_items)
-            pos_score = torch.sum(seq_output_t * pos_items_emb, dim=-1)  # [B]
-            neg_score = torch.sum(seq_output_t * neg_items_emb, dim=-1)  # [B]
+            pos_score = torch.sum(seq_output * pos_items_emb, dim=-1)  # [B]
+            neg_score = torch.sum(seq_output * neg_items_emb, dim=-1)  # [B]
             loss = self.loss_fct(pos_score, neg_score)
         else:  # self.loss_type = 'CE'
-
             test_item_emb = self.item_embedding.weight[:self.n_items]  # unpad the augmentation mask
-            logits = torch.matmul(seq_output_t, test_item_emb.transpose(0, 1))
+            logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
             loss = self.loss_fct(logits, pos_items)
 
         # NCE
+        # aug_item_seq1, aug_len1, aug_item_seq2, aug_len2 = self.augment(item_seq, item_seq_len)
+        aug_item_seq1, aug_len1, aug_item_seq2, aug_len2 = \
+            interaction['aug1'], interaction['aug_len1'], interaction['aug2'], interaction['aug_len2']
+        seq_output1 = self.forward(aug_item_seq1, aug_len1)
+        seq_output2 = self.forward(aug_item_seq2, aug_len2)
 
-        # Time ssl
-        aug_item_seq, aug_len = interaction['aug'], interaction['aug_len']
-        aug_seq_output_t, aug_seq_output_f = self.forward(aug_item_seq, aug_len)
-        nce_logits_t, nce_labels_t = self.info_nce(aug_seq_output_t, seq_output_t, temp=self.tau,
-                                                   batch_size=seq_output_t.shape[0],
-                                                   sim=self.sim)
-        nce_loss_t = self.nce_fct(nce_logits_t, nce_labels_t)
+        nce_logits, nce_labels = self.info_nce(seq_output1, seq_output2, temp=self.tau, batch_size=aug_len1.shape[0],
+                                               sim=self.sim)
 
-        # Time-Frequency ssl
-        nce_logits_t_f, nce_labels_t_f = self.info_nce(seq_output_f, seq_output_t, temp=self.tau,
-                                                       batch_size=seq_output_t.shape[0],
-                                                       sim=self.sim)
-        nce_loss_t_f = self.nce_fct(nce_logits_t_f, nce_labels_t_f)
+        # nce_logits = torch.mm(seq_output1, seq_output2.T)
+        # nce_labels = torch.tensor(list(range(nce_logits.shape[0])), dtype=torch.long, device=item_seq.device)
 
-        # Frequency ssl
-        f_aug_seq_output_amp, f_aug_seq_output_phase = self.my_fft(seq_output_t)
-        f_seq_output_amp, f_seq_output_phase = self.my_fft(seq_output_f)
+        with torch.no_grad():
+            alignment, uniformity = self.decompose(seq_output1, seq_output2, seq_output,
+                                                   batch_size=item_seq_len.shape[0])
 
-        # Amp ssl
-        nce_logits_amp, nce_labels_amp = self.info_nce(f_aug_seq_output_amp, f_seq_output_amp, temp=self.tau,
-                                                       batch_size=seq_output_t.shape[0],
-                                                       sim=self.sim)
-        nce_loss_amp = self.nce_fct(nce_logits_amp, nce_labels_amp)
+        nce_loss = self.nce_fct(nce_logits, nce_labels)
 
-        # Phase ssl
-        nce_logits_phase, nce_labels_phase = self.info_nce(f_aug_seq_output_phase, f_seq_output_phase, temp=self.tau,
-                                                           batch_size=seq_output_t.shape[0],
-                                                           sim=self.sim)
-        nce_loss_phase = self.nce_fct(nce_logits_phase, nce_labels_phase)
-
-        return loss + self.lmd/2 * (
-                    self.lmd_tf * nce_loss_t + (1 - self.lmd_tf)/3 * (nce_loss_t_f + nce_loss_phase + nce_loss_amp))
+        return loss + self.lmd * nce_loss, alignment, uniformity
 
     def decompose(self, z_i, z_j, origin_z, batch_size):
         """
@@ -263,16 +297,15 @@ class CLF4SRec(SequentialRecommender):
         item_seq = interaction[self.ITEM_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
         test_item = interaction[self.ITEM_ID]
-        seq_output_t, seq_output_f = self.forward(item_seq, item_seq_len)
+        seq_output = self.forward(item_seq, item_seq_len)
         test_item_emb = self.item_embedding(test_item)
-        scores = torch.mul(seq_output_t, test_item_emb).sum(dim=1)  # [B]
+        scores = torch.mul(seq_output, test_item_emb).sum(dim=1)  # [B]
         return scores
 
     def full_sort_predict(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
-        seq_output_t, seq_output_f = self.forward(item_seq, item_seq_len)
+        seq_output = self.forward(item_seq, item_seq_len)
         test_items_emb = self.item_embedding.weight[:self.n_items]  # unpad the augmentation mask
-        scores = torch.matmul(seq_output_t, test_items_emb.transpose(0, 1))  # [B n_items]
+        scores = torch.matmul(seq_output, test_items_emb.transpose(0, 1))  # [B n_items]
         return scores
-

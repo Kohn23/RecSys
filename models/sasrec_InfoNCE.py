@@ -15,27 +15,6 @@ class SASRecInfoNCE(SASRec):
         super().__init__(config, dataset)
         self.tau = config['tau']
 
-    def _sample_neg_items(self, pos_items, batch_size, num_negs=10):
-        """
-            in-batch neg-sampling
-        """
-        neg_items = torch.zeros(batch_size, num_negs, dtype=torch.long).to(pos_items.device)
-
-        for i in range(batch_size):
-            all_items = torch.arange(1, self.n_items).to(pos_items.device)
-
-            mask = all_items != pos_items[i]
-            candidate_neg_items = all_items[mask]
-
-            if len(candidate_neg_items) >= num_negs:
-                selected = torch.randperm(len(candidate_neg_items))[:num_negs]
-                neg_items[i] = candidate_neg_items[selected]
-            else:
-                selected = torch.randint(0, len(candidate_neg_items), (num_negs,))
-                neg_items[i] = candidate_neg_items[selected]
-
-        return neg_items
-
     def calculate_loss(self, interaction):
         """
             Calculate InfoNCE loss using contrastive learning from CL4SR

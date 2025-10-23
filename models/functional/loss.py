@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 
-def mask_correlated_samples(batch_size):
+def _mask_correlated_samples(batch_size):
     """
     From recbole_da
     """
@@ -48,7 +48,7 @@ def info_nce(query_emb, pos_emb, temperature, batch_size, sim='dot'):
     sim_p_to_q = torch.diag(sim_matrix, -batch_size)  # [B]
     positive_scores = torch.cat((sim_q_to_p, sim_p_to_q), dim=0).reshape(N, 1)
 
-    mask = mask_correlated_samples(batch_size)
+    mask = _mask_correlated_samples(batch_size)
     negative_scores = sim_matrix[mask].reshape(N, -1)
 
     logits = torch.cat((positive_scores, negative_scores), dim=1)  # [N, 1 + ...]
