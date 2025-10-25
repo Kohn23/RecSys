@@ -15,7 +15,7 @@ def _mask_correlated_samples(batch_size):
     return mask
 
 
-def info_nce(query_emb, pos_emb, temperature, batch_size, sim='dot'):
+def info_nce(query_emb, pos_emb, tau, batch_size, sim='dot'):
     """
     In-batch InfoNCE loss (SimCLR-style)
 
@@ -38,9 +38,9 @@ def info_nce(query_emb, pos_emb, temperature, batch_size, sim='dot'):
     if sim == 'cos':
         sim_matrix = nn.functional.cosine_similarity(
             all_emb.unsqueeze(1), all_emb.unsqueeze(0), dim=2
-        ) / temperature
+        ) / tau
     elif sim == 'dot':
-        sim_matrix = torch.mm(all_emb, all_emb.T) / temperature
+        sim_matrix = torch.mm(all_emb, all_emb.T) / tau
     else:
         raise NotImplementedError
 

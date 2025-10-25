@@ -1,10 +1,9 @@
 """
-An update for TrainDataloader from Recbole to support:
-1. Data Augment
-2.
+An update on TrainDataloader from Recbole to support:
+1. Sequential Data Augment
 
 Note:
-    This
+    1. Modification is based on the latest version(1.2.1)
 """
 
 
@@ -18,12 +17,12 @@ from recbole.data.dataloader.abstract_dataloader import (
 from recbole.data.interaction import Interaction, cat_interactions
 from recbole.utils import InputType, ModelType
 
+from utils.dataloader.Mixins import SequentialDataAugmentMixin
 
-class TrainDataLoader(NegSampleDataLoader):
-    """:class:`TrainDataLoader` is a dataloader for training.
-    It can generate negative interaction when :attr:`training_neg_sample_num` is not zero.
-    For the result of every batch, we permit that every positive interaction and its negative interaction
-    must be in the same batch.
+
+class SequentialDataLoader(GeneralDataAugmentMixin, NegSampleDataLoader):
+    """
+    Modified :class:TrainDataloader for Sequential data augmentation
 
     Args:
         config (Config): The config of dataloader.

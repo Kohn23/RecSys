@@ -1,4 +1,3 @@
-import torch
 import torch.nn.functional as F
 from recbole.model.sequential_recommender.sasrec import SASRec
 

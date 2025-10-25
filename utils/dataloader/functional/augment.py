@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 
-def item_crop(seq, length, eta=0.6):
+def sequence_crop(seq, length, eta=0.6):
     """From CL4SRec"""
     num_left = math.floor(length * eta)
     crop_begin = random.randint(0, length - num_left)
@@ -16,7 +16,7 @@ def item_crop(seq, length, eta=0.6):
     return torch.tensor(croped_item_seq, dtype=torch.long), torch.tensor(num_left, dtype=torch.long)
 
 
-def item_mask(seq, length, item_num, gamma=0.3):
+def sequence_mask(seq, length, item_num, gamma=0.3):
     """From CL4SRec"""
     num_mask = math.floor(length * gamma)
     mask_index = random.sample(range(length), k=num_mask)
@@ -25,7 +25,7 @@ def item_mask(seq, length, item_num, gamma=0.3):
     return masked_item_seq, length
 
 
-def item_reorder(seq, length, beta=0.6):
+def sequence_reorder(seq, length, beta=0.6):
     """From CL4SRec"""
     num_reorder = math.floor(length * beta)
     reorder_begin = random.randint(0, length - num_reorder)
