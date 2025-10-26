@@ -10,17 +10,17 @@ Note:
 import numpy as np
 import torch
 from logging import getLogger
-from recbole.data.dataloader.abstract_dataloader import (
+from utils.dataloader.abstract_dataloader import (
     AbstractDataLoader,
     NegSampleDataLoader,
 )
 from recbole.data.interaction import Interaction, cat_interactions
 from recbole.utils import InputType, ModelType
 
-from utils.dataloader.Mixins import SequentialDataAugmentMixin
+from utils.dataloader.mixins import SequentialDataAugmentMixin
 
 
-class SequentialDataLoader(GeneralDataAugmentMixin, NegSampleDataLoader):
+class SequentialDataLoader(SequentialDataAugmentMixin, NegSampleDataLoader):
     """
     Modified :class:TrainDataloader for Sequential data augmentation
 
@@ -31,13 +31,14 @@ class SequentialDataLoader(GeneralDataAugmentMixin, NegSampleDataLoader):
         shuffle (bool, optional): Whether the dataloader will be shuffle after a round. Defaults to ``False``.
     """
 
-    def __init__(self, config, dataset, sampler, shuffle=False):
+    def __init__(self, config, dataset, sampler, shuffle=True):
         self.logger = getLogger()
         self._set_neg_sample_args(
             config, dataset, config["MODEL_INPUT_TYPE"], config["train_neg_sample_args"]
         )
         self.sample_size = len(dataset)
-        super().__init__(config, dataset, sampler, shuffle=shuffle)
+        SequentialDataAugmentMixin.__init__(self, config)
+        NegSampleDataLoader.__init__(self, config, dataset, sampler, shuffle=shuffle)
 
     def _init_batch_size_and_step(self):
         batch_size = self.config["train_batch_size"]
@@ -61,6 +62,6 @@ class SequentialDataLoader(GeneralDataAugmentMixin, NegSampleDataLoader):
 
     def collate_fn(self, index):
         index = np.array(index)
-        data = self._dataset[index]
-        transformed_data = self.transform(self._dataset, data)
-        return self._neg_sampling(transformed_data)
+        interactions = self._dataset[index]
+        augmented_data = self.augment(interactions)
+        return self._neg_sampling(augmented_data)

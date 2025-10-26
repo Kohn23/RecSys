@@ -9,6 +9,8 @@ from recbole.sampler import KGSampler, Sampler, RepeatableSampler
 from recbole.utils import ModelType, ensure_dir, set_color
 from recbole.utils.argument_list import dataset_arguments
 
+from utils.dataloader.sequential_dataloader import SequentialDataLoader
+
 
 def _create_sampler(
     dataset,
@@ -87,6 +89,7 @@ def create_samplers(config, dataset, built_datasets):
     )
     test_sampler = test_sampler.set_phase("test") if test_sampler else None
     return train_sampler, valid_sampler, test_sampler
+
 
 def _save_split_dataloaders(config, dataloaders):
     """Save split dataloaders.
@@ -192,10 +195,12 @@ def _get_dataloader(config, phase: Literal["train", "valid", "test", "evaluation
 
     model_type = config["MODEL_TYPE"]
     if phase == "train":
-        if model_type != ModelType.KNOWLEDGE:
-            return TrainDataLoader
-        else:
+        if model_type == ModelType.KNOWLEDGE:
             return KnowledgeBasedDataLoader
+        elif model_type == ModelType.SEQUENTIAL:
+            return SequentialDataLoader
+        else:
+            return TrainDataLoader
     else:
         eval_mode = config["eval_args"]["mode"][phase]
         if eval_mode == "full":
@@ -278,6 +283,7 @@ def create_dataloaders(config, dataset):
             train_data = _get_dataloader(config, "train")(
                 config, train_dataset, train_sampler, kg_sampler, shuffle=True
             )
+
 
         valid_data = _get_dataloader(config, "valid")(
             config, valid_dataset, valid_sampler, shuffle=False

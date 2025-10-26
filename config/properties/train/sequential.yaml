@@ -1,0 +1,37 @@
+# Training Settings
+epochs: 300                     # (int) The number of training epochs.
+train_batch_size: 256           # (int) The training batch size.
+learner: adam                   # (str) The name of used optimizer.
+learning_rate: 0.0001           # (float) Learning rate.
+train_neg_sample_args:          # (dict) Negative sampling configuration for model training.
+  distribution: uniform         # (str) The distribution of negative items.
+  sample_num: 1                 # (int) The sampled num of negative items.
+  alpha: 1.0                    # (float) The power of sampling probability for popularity distribution.
+  dynamic: False                # (bool) Whether to use dynamic negative sampling.
+  candidate_num: 0              # (int) The number of candidate negative items when dynamic negative sampling.
+eval_step: 1                    # (int) The number of training epochs before an evaluation on the valid dataset.
+stopping_step: 5                # (int) The threshold for validation-based early stopping.
+clip_grad_norm: ~               # (dict) The args of clip_grad_norm_ which will clip gradient norm of model.
+weight_decay: 0.01              # (float) The weight decay value (L2 penalty) for optimizers.
+loss_decimal_place: 4           # (int) The decimal place of training loss.
+require_pow: False              # (bool) Whether or not to perform power operation in EmbLoss.
+enable_amp: False               # (bool) Whether or not to use mixed precision training.
+enable_scaler: False            # (bool) Whether or not to use GradScaler in mixed precision training.
+# This should be determined according to model
+# Abandoned
+# transform: ~                  # (str) The transform operation for batch data process.
+shuffle: True                   # (bool) Whether or not to shuffle the training data before each epoch.
+
+# Evaluation Settings
+eval_args:                      # (dict) 4 keys: group_by, order, split, and mode
+  split: {'LS': 'valid_and_test'}   # (dict) The splitting strategy ranging in ['RS','LS'].
+  group_by: user                # (str) The grouping strategy ranging in ['user', 'none'].
+  order: TO                     # (str) The ordering strategy ranging in ['RO', 'TO'].
+  mode: uni100                  # (str) The evaluation mode ranging in ['full','unixxx','popxxx','labeled'].
+repeatable: True                # (bool) Whether to evaluate results with a repeatable recommendation scene.
+metrics: ["MRR","NDCG","Hit"]   # (list or str) Evaluation metrics.
+topk: [5, 10]                   # (list or int or None) The value of k for topk evaluation metrics.
+valid_metric: MRR@10            # (str) The evaluation metric for early stopping.
+valid_metric_bigger: True       # (bool) Whether to take a bigger valid metric value as a better result.
+eval_batch_size: 1024           # (int) The evaluation batch size.
+metric_decimal_place: 4         # (int) The decimal place of metric scores.

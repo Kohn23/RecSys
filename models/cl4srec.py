@@ -36,7 +36,7 @@ class CL4SRec(SASRec):
         self.aug1 = config["CROP_ITEM_SEQ"]
         self.aug_len1 = config["CROP_ITEM_SEQ_LEN"]
         self.aug2 = config["REORDER_ITEM_SEQ"]
-        self.aug_len2 = config["ITEM_SEQ_LEN"]
+        self.aug_len2 = config["REORDER_ITEM_SEQ_LEN"]
 
     def calculate_loss(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]

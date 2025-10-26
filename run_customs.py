@@ -12,9 +12,10 @@ from utils.logger import *
 # single-domain
 from recbole.config import Config
 from recbole.data import create_dataset, data_preparation
+from utils.dataloader import create_dataloaders
 from recbole.trainer import Trainer
 from utils.trainer import DSERTrainer
-from models import SASRecInfoNCE, DSER, CLF4SRec
+from models import SASRecInfoNCE, DSER, CL4SRec
 
 
 def run_single_domain(module: Type[nn.Module], trainer, dataset, config_file_list):
@@ -32,8 +33,7 @@ def run_single_domain(module: Type[nn.Module], trainer, dataset, config_file_lis
     dataset = create_dataset(config)
     logger.info(dataset)
 
-    # TODO: find a way to unify creating dataloader
-    train_data, valid_data, test_data = data_preparation(config, dataset)
+    train_data, valid_data, test_data = create_dataloaders(config, dataset)
 
     # model
     model = module(config, train_data.dataset).to(config['device'])
@@ -99,12 +99,20 @@ if __name__ == "__main__":
     # debug
     os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
+    # config_file_list = [
+    #     './config/properties/overall.yaml',
+    #     './config/properties/dataset/single_domain.yaml',
+    #     './config/properties/model/DSER.yaml',
+    # ]
+    # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abe_electronics', config_file_list=config_file_list)
+
     config_file_list = [
         './config/properties/overall.yaml',
+        './config/properties/train/sequential.yaml',
         './config/properties/dataset/single_domain.yaml',
-        './config/properties/model/DSER.yaml',
+        './config/properties/model/CL4SRec.yaml',
     ]
-    run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abe_electronics', config_file_list=config_file_list)
+    run_single_domain(module=CL4SRec, trainer=Trainer, dataset='abe_electronics', config_file_list=config_file_list)
 
     # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abe_23_beauty_and_pc', config_dict=config_sr)
     # run_cross_domain(module=DTCDR, trainer=CrossDomainTrainer, config_dict=config_cdr)
