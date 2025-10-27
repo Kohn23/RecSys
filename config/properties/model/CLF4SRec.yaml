@@ -11,14 +11,14 @@ loss_type: 'CE'                 # (str) The type of loss function. Range in ['BP
 
 
 lmd: 0.1
+lmd_tf : 0.5
 lmd_sem: 0.1
 
-# contrastive-learning
 tau: 1
 contrast: 'us_x'
 sim: 'dot'
+beta: 0.6
+eta: 0.6
 
-# frequency
 noise : 'CLOSE'
 noise_r : 0
-lmd_tf : 0.5
