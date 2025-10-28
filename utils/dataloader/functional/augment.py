@@ -9,8 +9,10 @@ def seq_item_crop(seq, length, eta=0.6, device=None):
     crop_len = math.floor(length * eta)
     if crop_len == 0:
         return (
-            torch.tensor(seq, dtype=torch.long, device=device),
-            torch.tensor(length, dtype=torch.long, device=device)
+            # torch.tensor(seq, dtype=torch.long, device=device),
+            # torch.tensor(length, dtype=torch.long, device=device)
+            seq.clone().detach(),
+            length.clone().detach()
         )
 
     crop_begin = random.randint(0, length - crop_len)
@@ -32,17 +34,20 @@ def seq_item_mask(seq, length, gamma=0.3, device=None):
     num_mask = math.floor(length * gamma)
     if num_mask == 0:
         return (
-            torch.tensor(seq, dtype=torch.long, device=device),
-            torch.tensor(length, dtype=torch.long, device=device)
+            # torch.tensor(seq, dtype=torch.long, device=device),
+            # torch.tensor(length, dtype=torch.long, device=device)
+            seq.clone().detach(),
+            length.clone().detach()
         )
 
     mask_index = random.sample(range(length), k=num_mask)
-    masked_item_seq = seq.copy()
+    masked_item_seq = seq.cpu().detach().numpy().copy()
     masked_item_seq[mask_index] = 0
 
     return (
         torch.tensor(masked_item_seq, dtype=torch.long, device=device),
-        torch.tensor(length, dtype=torch.long, device=device)
+        # torch.tensor(length, dtype=torch.long, device=device)
+        length.clone().detach()
     )
 
 
@@ -51,8 +56,10 @@ def seq_item_noise(seq, length, gamma=0.3, item_num=None, device=None):
     num_noise = math.floor(length * gamma)
     if num_noise == 0:
         return (
-            torch.tensor(seq, dtype=torch.long, device=device),
-            torch.tensor(length, dtype=torch.long, device=device)
+            # torch.tensor(seq, dtype=torch.long, device=device),
+            # torch.tensor(length, dtype=torch.long, device=device)
+            seq.clone().detach(),
+            length.clone().detach()
         )
 
     noise_index = random.sample(range(length), k=num_noise)
@@ -71,12 +78,14 @@ def seq_item_reorder(seq, length, beta=0.6, device=None):
     reorder_len = math.floor(length * beta)
     if reorder_len == 0:
         return (
-            torch.tensor(seq, dtype=torch.long, device=device),
-            torch.tensor(length, dtype=torch.long, device=device)
+            # torch.tensor(seq, dtype=torch.long, device=device),
+            # torch.tensor(length, dtype=torch.long, device=device)
+            seq.clone().detach(),
+            length.clone().detach()
         )
 
     reorder_begin = random.randint(0, length - reorder_len)
-    reorder_item_seq = seq.copy()
+    reorder_item_seq = seq.cpu().detach().numpy().copy()
 
     shuffle_index = list(range(reorder_begin, reorder_begin + reorder_len))
     random.shuffle(shuffle_index)
@@ -86,5 +95,6 @@ def seq_item_reorder(seq, length, beta=0.6, device=None):
 
     return (
         torch.tensor(reorder_item_seq, dtype=torch.long, device=device),
-        torch.tensor(length, dtype=torch.long, device=device)
+        # torch.tensor(length, dtype=torch.long, device=device)
+        length.clone().detach()
     )

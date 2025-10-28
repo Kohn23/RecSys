@@ -33,10 +33,10 @@ class CL4SRec(SASRec):
         self.tau = config['tau']
         self.sim = config['sim']
         # currently using da-style names and fixed augment
-        self.aug1 = config["CROP_ITEM_SEQ"]
-        self.aug_len1 = config["CROP_ITEM_SEQ_LEN"]
-        self.aug2 = config["REORDER_ITEM_SEQ"]
-        self.aug_len2 = config["REORDER_ITEM_SEQ_LEN"]
+        # self.aug1 = config["CROP_ITEM_SEQ"]
+        # self.aug_len1 = config["CROP_ITEM_SEQ_LEN"]
+        # self.aug2 = config["REORDER_ITEM_SEQ"]
+        # self.aug_len2 = config["REORDER_ITEM_SEQ_LEN"]
 
     def calculate_loss(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
@@ -57,7 +57,7 @@ class CL4SRec(SASRec):
 
         # NCE
         aug_item_seq1, aug_len1, aug_item_seq2, aug_len2 = \
-            interaction[self.aug1], interaction[self.aug_len1], interaction[self.aug2], interaction[self.aug_len2]
+            interaction['aug1'], interaction['aug_len1'], interaction['aug2'], interaction['aug_len2']
         seq_output1 = self.forward(aug_item_seq1, aug_len1)
         seq_output2 = self.forward(aug_item_seq2, aug_len2)
 

@@ -15,3 +15,4 @@ tau: 0.01
 sim: 'dot'
 beta: 0.6
 eta: 0.6
+gamma: 0.3

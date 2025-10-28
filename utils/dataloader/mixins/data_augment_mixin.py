@@ -7,23 +7,29 @@ import torch
 from typing import Dict, Any, Optional
 from recbole.data.interaction import Interaction
 from abc import ABC, abstractmethod
-from utils.dataloader.functional import (
-    seq_item_crop,
-    seq_item_mask,
-    seq_item_noise,
-    seq_item_reorder
-)
+# from utils.dataloader.functional import (
+#     seq_item_crop,
+#     seq_item_mask,
+#     seq_item_noise,
+#     seq_item_reorder
+# )
 
 
 class DataAugmentMixin(ABC):
     """Interface"""
 
-    map_function = {
-        'crop': seq_item_crop,
-        'mask': seq_item_mask,
-        'reorder': seq_item_reorder,
-        #'noise': seq_item_noise
-    }
+    @property
+    def map_function(self):
+        from utils.dataloader.functional import (
+            seq_item_crop,
+            seq_item_mask,
+            seq_item_reorder
+        )
+        return {
+            'crop': seq_item_crop,
+            'mask': seq_item_mask,
+            'reorder': seq_item_reorder,
+        }
 
     def __init__(self, config):
         pass
@@ -77,7 +83,7 @@ class SequentialDataAugmentMixin(DataAugmentMixin):
             config["REORDER_ITEM_SEQ"] = self.REORDER_ITEM_SEQ
             config['REORDER_ITEM_SEQ_LEN'] = self.REORDER_ITEM_SEQ_LEN
             # params
-            self.reorder_beta = config.get["beta"]
+            self.reorder_beta = config["beta"]
 
     def _get_method(self, config):
         model = config['model'].lower()
@@ -133,7 +139,7 @@ class SequentialDataAugmentMixin(DataAugmentMixin):
 
             # 更新interaction
             interaction.update(Interaction({
-                'aug_view': torch.stack(aug_seqs),
+                'aug': torch.stack(aug_seqs),
                 'aug_len': torch.stack(aug_lens)
             }))
         elif self.mode == 'dual-view':
