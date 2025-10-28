@@ -15,6 +15,14 @@ from utils.dataloader.functional import (
 
 class DataAugmentMixin(ABC):
     """Interface"""
+
+    map_function = {
+        'crop': seq_item_crop,
+        'mask': seq_item_mask,
+        'reorder': seq_item_reorder,
+        #'noise': seq_item_noise
+    }
+
     def __init__(self, config):
         pass
 
@@ -25,55 +33,73 @@ class DataAugmentMixin(ABC):
 
 
 class SequentialDataAugmentMixin(DataAugmentMixin):
+    """
+    Sequential augment
+    """
+
+    get_preset = {
+        'cl4srec': {
+            'func': ['crop', 'mask', 'reorder'],
+            'mode': 'dual-view'
+        },
+    }
+
     def __init__(self, config):
         super().__init__(config)
-        self.augment_method = self._get_augment_methods(config)
+        self.augment_method = self._get_method(config)
 
-
-        self.crop_eta = config["eta"]
-        self.mask_gamma = config["gamma"]
-        self.noise_r = config["noise_r"]
-        self.reorder_beta = config.get["beta"]
-
-    def _set_fields(self, config):
+    def _set_params(self, config, augment_method):
         self.ITEM_SEQ = config["ITEM_ID_FIELD"] + config["LIST_SUFFIX"]
         self.ITEM_SEQ_LEN = config["ITEM_LIST_LENGTH_FIELD"]
+        self.mode = augment_method['mode']
+
+        if 'crop' in augment_method['func']:
+            self.CROP_ITEM_SEQ = "Crop_" + self.ITEM_SEQ
+            self.CROP_ITEM_SEQ_LEN = "Crop_" + self.ITEM_SEQ_LEN
+            config["CROP_ITEM_SEQ"] = self.CROP_ITEM_SEQ
+            config["CROP_ITEM_SEQ_LEN"] = self.CROP_ITEM_SEQ_LEN
+            # params
+            self.crop_eta = config["eta"]
+
+        if 'mask' in augment_method['func']:
+            self.MASK_ITEM_SEQ = "Mask_" + self.ITEM_SEQ
+            self.MASK_ITEM_SEQ_LEN = "Mask_" + self.ITEM_SEQ_LEN
+            config["MASK_ITEM_SEQ"] = self.MASK_ITEM_SEQ
+            config["MASK_ITEM_SEQ_LEN"] = self.MASK_ITEM_SEQ_LEN
+            # params
+            self.mask_gamma = config["gamma"]
+
+        if 'reorder' in augment_method['func']:
+            self.REORDER_ITEM_SEQ = "Reorder_" + self.ITEM_SEQ
+            self.REORDER_ITEM_SEQ_LEN = "Reorder_" + self.ITEM_SEQ_LEN
+            config["REORDER_ITEM_SEQ"] = self.REORDER_ITEM_SEQ
+            config['REORDER_ITEM_SEQ_LEN'] = self.REORDER_ITEM_SEQ_LEN
+            # params
+            self.reorder_beta = config.get["beta"]
 
     def _get_method(self, config):
         model = config['model'].lower()
 
-        get_methods = {
-            'cl4srec': ['crop', 'mask', 'reorder'],
-        }
-
-        augment_methods = None
-        if model in get_methods:
-            augment_methods = get_methods[model]
+        augment_method = None
+        if model in self.get_preset:
+            augment_method = self.get_preset[model]
         elif config['augment']:
-            augment_methods = config['augment']
+            augment_method = config['augment']
 
-        if not augment_methods:
+        if not augment_method:
             return []
 
-        available_methods = {
-            'crop': seq_item_crop,
-            'mask': seq_item_mask,
-            'reorder': seq_item_reorder,
-            'noise': seq_item_noise
-        }
+        self._set_params(config, augment_method)
 
-        enabled_methods = []
-        for method_name in augment_methods:
-            if method_name in available_methods:
-                enabled_methods.append(available_methods[method_name])
-                print(f"Loaded augmenter: {method_name}")
-            else:
-                print(f"Warning: Unknown augmentation method '{method_name}'")
+        return augment_method
 
-        return enabled_methods
+    def _get_single_view(self, seq, length):
 
-    def
+    def _get_views(self, seq, length):
+
 
     def augment(self, interaction):
+        if 
+
 
         return interaction
