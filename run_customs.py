@@ -15,7 +15,7 @@ from recbole.data import create_dataset, data_preparation
 from utils.dataloader import create_dataloaders
 from recbole.trainer import Trainer
 from utils.trainer import DSERTrainer
-from models import SASRecInfoNCE, DSER, CL4SRec
+from models import DSER, CL4SRec, CLF4SRec
 
 
 def run_single_domain(module: Type[nn.Module], trainer, dataset, config_file_list):
@@ -110,9 +110,6 @@ if __name__ == "__main__":
         './config/properties/overall.yaml',
         './config/properties/train/sequential.yaml',
         './config/properties/dataset/single_domain.yaml',
-        './config/properties/model/CL4SRec.yaml',
+        './config/properties/model/CLF4SRec.yaml',
     ]
-    run_single_domain(module=CL4SRec, trainer=Trainer, dataset='abe_electronics', config_file_list=config_file_list)
-
-    # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abe_23_beauty_and_pc', config_dict=config_sr)
-    # run_cross_domain(module=DTCDR, trainer=CrossDomainTrainer, config_dict=config_cdr)
+    run_single_domain(module=CLF4SRec, trainer=Trainer, dataset='abe_electronics', config_file_list=config_file_list)

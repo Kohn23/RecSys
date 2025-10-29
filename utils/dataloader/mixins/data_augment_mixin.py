@@ -50,6 +50,10 @@ class SequentialDataAugmentMixin(DataAugmentMixin):
             'func': ['crop', 'mask', 'reorder'],
             'mode': 'dual-view'
         },
+        'clf4srec': {
+            'func': ['crop', 'mask', 'reorder'],
+            'mode': 'single-view'
+        },
     }
 
     def __init__(self, config):

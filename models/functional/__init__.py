@@ -1,1 +1,2 @@
-from models.functional.loss import *
+from models.functional.loss import info_nce
+from models.functional.freq import *
