@@ -110,6 +110,6 @@ if __name__ == "__main__":
         './config/properties/overall.yaml',
         './config/properties/train/sequential.yaml',
         './config/properties/dataset/single_domain.yaml',
-        './config/properties/model/CLF4SRec.yaml',
+        './config/properties/model/CL4SRec.yaml',
     ]
-    run_single_domain(module=CLF4SRec, trainer=Trainer, dataset='abe_electronics', config_file_list=config_file_list)
+    run_single_domain(module=CL4SRec, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
