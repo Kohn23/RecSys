@@ -109,7 +109,7 @@ if __name__ == "__main__":
     config_file_list = [
         './config/properties/overall.yaml',
         './config/properties/train/sequential.yaml',
-        './config/properties/dataset/single_domain.yaml',
+        './config/properties/data/single_domain.yaml',
         './config/properties/model/CL4SRec.yaml',
     ]
     run_single_domain(module=CL4SRec, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)

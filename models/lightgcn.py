@@ -12,14 +12,13 @@ Reference code:
     https://github.com/kuandeng/LightGCN
 """
 
-import numpy as np
 import torch
 
 from recbole.model.init import xavier_uniform_initialization
 from recbole.model.loss import BPRLoss, EmbLoss
 from recbole.utils import InputType
 
-from recbole_gnn.model.abstract_recommender import GeneralGraphRecommender
+from models.base import GeneralGraphRecommender
 from models.layers import LightGCNConv
 
 
