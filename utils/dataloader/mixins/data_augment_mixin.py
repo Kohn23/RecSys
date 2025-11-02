@@ -7,13 +7,6 @@ import torch
 from typing import Dict, Any, Optional
 from recbole.data.interaction import Interaction
 from abc import ABC, abstractmethod
-# from utils.dataloader.functional import (
-#     seq_item_crop,
-#     seq_item_mask,
-#     seq_item_noise,
-#     seq_item_reorder
-# )
-
 
 class DataAugmentMixin(ABC):
     """Interface"""
@@ -48,11 +41,11 @@ class SequentialDataAugmentMixin(DataAugmentMixin):
     get_preset = {
         'cl4srec': {
             'func': ['crop', 'mask', 'reorder'],
-            'mode': 'dual-view'
+            'n_views': 2
         },
         'clf4srec': {
             'func': ['crop', 'mask', 'reorder'],
-            'mode': 'single-view'
+            'n_views': 1
         },
     }
 
@@ -63,7 +56,7 @@ class SequentialDataAugmentMixin(DataAugmentMixin):
     def _set_params(self, config, augment_method):
         self.ITEM_SEQ = config["ITEM_ID_FIELD"] + config["LIST_SUFFIX"]
         self.ITEM_SEQ_LEN = config["ITEM_LIST_LENGTH_FIELD"]
-        self.mode = augment_method['mode']
+        self.n_views = augment_method['n_views']
 
         if 'crop' in augment_method['func']:
             self.CROP_ITEM_SEQ = "Crop_" + self.ITEM_SEQ
@@ -130,56 +123,76 @@ class SequentialDataAugmentMixin(DataAugmentMixin):
         lengths = interaction[self.ITEM_SEQ_LEN]
         batch_size = len(seqs)
 
-        if self.mode == 'single-view':
-            aug_seqs = []
-            aug_lens = []
+        # if self.mode == 'single-view':
+        #     aug_seqs = []
+        #     aug_lens = []
+        #
+        #     for i in range(batch_size):
+        #         seq = seqs[i]
+        #         length = lengths[i]
+        #         aug_seq, aug_len = self._get_single_view(seq, length)
+        #         aug_seqs.append(aug_seq)
+        #         aug_lens.append(aug_len)
+        #
+        #     # 更新interaction
+        #     interaction.update(Interaction({
+        #         'aug': torch.stack(aug_seqs),
+        #         'aug_len': torch.stack(aug_lens)
+        #     }))
+        # elif self.mode == 'dual-view':
+        #     aug_seqs1 = []
+        #     aug_lens1 = []
+        #     aug_seqs2 = []
+        #     aug_lens2 = []
+        #
+        #     for i in range(batch_size):
+        #         seq = seqs[i]
+        #         length = lengths[i]
+        #         aug_seq1, aug_len1 = self._get_single_view(seq, length)
+        #         aug_seq2, aug_len2 = self._get_single_view(seq, length)
+        #
+        #         aug_seqs1.append(aug_seq1)
+        #         aug_lens1.append(aug_len1)
+        #         aug_seqs2.append(aug_seq2)
+        #         aug_lens2.append(aug_len2)
+        #
+        #     interaction.update(Interaction({
+        #         'aug1': torch.stack(aug_seqs1),
+        #         'aug_len1': torch.stack(aug_lens1),
+        #         'aug2': torch.stack(aug_seqs2),
+        #         'aug_len2': torch.stack(aug_lens2)
+        #     }))
+        # else:
+        #     raise ValueError(f"Unsupported mode: {self.mode}")
+        #
+        # return interaction
+        aug_seqs = [[] for _ in range(self.n_views)]
+        aug_lens = [[] for _ in range(self.n_views)]
 
-            for i in range(batch_size):
-                seq = seqs[i]
-                length = lengths[i]
-                aug_seq, aug_len = self._get_single_view(seq, length)
-                aug_seqs.append(aug_seq)
-                aug_lens.append(aug_len)
+        for i in range(batch_size):
+            seq = seqs[i]
+            length = lengths[i]
+            for v in range(self.n_views):
+                a_s, a_l = self._get_single_view(seq, length)
+                aug_seqs[v].append(a_s)
+                aug_lens[v].append(a_l)
 
-            # 更新interaction
-            interaction.update(Interaction({
-                'aug': torch.stack(aug_seqs),
-                'aug_len': torch.stack(aug_lens)
-            }))
-        elif self.mode == 'dual-view':
-            aug_seqs1 = []
-            aug_lens1 = []
-            aug_seqs2 = []
-            aug_lens2 = []
+        key_val = {}
+        for v in range(self.n_views):
+            key_val[f'aug{v + 1}'] = torch.stack(aug_seqs[v])
+            key_val[f'aug_len{v + 1}'] = torch.stack(aug_lens[v])
 
-            for i in range(batch_size):
-                seq = seqs[i]
-                length = lengths[i]
-                aug_seq1, aug_len1 = self._get_single_view(seq, length)
-                aug_seq2, aug_len2 = self._get_single_view(seq, length)
-
-                aug_seqs1.append(aug_seq1)
-                aug_lens1.append(aug_len1)
-                aug_seqs2.append(aug_seq2)
-                aug_lens2.append(aug_len2)
-
-            interaction.update(Interaction({
-                'aug1': torch.stack(aug_seqs1),
-                'aug_len1': torch.stack(aug_lens1),
-                'aug2': torch.stack(aug_seqs2),
-                'aug_len2': torch.stack(aug_lens2)
-            }))
-        else:
-            raise ValueError(f"Unsupported mode: {self.mode}")
-
+        interaction.update(Interaction(key_val))
         return interaction
 
     def augment(self, interaction):
         if not self.augment_method:
             return interaction
 
-        # contrastive learning views
-        if self.augment_method['mode'] == 'single-view' or self.augment_method['mode'] == 'dual-view':
+        if self.augment_method['n_views']:
             interaction = self._get_views(interaction)
+        else:
+            # TODO: augment on single interaction
+            pass
 
         return interaction

@@ -16,9 +16,8 @@ import torch
 import torch.nn as nn
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import TransformerEncoder
-from recbole.model.loss import BPRLoss, EmbLoss
+from recbole.model.loss import BPRLoss
 
-from models.layers import SequenceGraphEncoder
 
 
 class SimDCL(SequentialRecommender):

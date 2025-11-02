@@ -83,7 +83,7 @@ class CLF4SRec(SASRec):
 
         # NCE
         # Time ssl
-        aug_item_seq, aug_len = interaction['aug'], interaction['aug_len']
+        aug_item_seq, aug_len = interaction['aug1'], interaction['aug_len1']
         aug_seq_output_t, aug_seq_output_f = self.forward(aug_item_seq, aug_len)
         nce_logits_t, nce_labels_t = info_nce(aug_seq_output_t, seq_output_t, self.tau, seq_output_t.shape[0], self.sim)
         nce_loss_t = self.nce_fct(nce_logits_t, nce_labels_t)
