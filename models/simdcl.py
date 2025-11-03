@@ -11,13 +11,80 @@ Note:
     It handles sequential information only when training Doc2Vec, thus the model is a general recommender
 
 """
-
 import torch
 import torch.nn as nn
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import TransformerEncoder
 from recbole.model.loss import BPRLoss
 
+class GNN(nn.Module):
+    r"""Graph neural networks are well-suited for session-based recommendation,
+    because it can automatically extract features of session graphs with considerations of rich node connections.
+    """
+
+    def __init__(self, embedding_size, step=1):
+        super(GNN, self).__init__()
+        self.step = step
+        self.embedding_size = embedding_size
+        self.input_size = embedding_size * 2
+        self.gate_size = embedding_size * 3
+        self.w_ih = Parameter(torch.Tensor(self.gate_size, self.input_size))
+        self.w_hh = Parameter(torch.Tensor(self.gate_size, self.embedding_size))
+        self.b_ih = Parameter(torch.Tensor(self.gate_size))
+        self.b_hh = Parameter(torch.Tensor(self.gate_size))
+        self.b_iah = Parameter(torch.Tensor(self.embedding_size))
+        self.b_ioh = Parameter(torch.Tensor(self.embedding_size))
+
+        self.linear_edge_in = nn.Linear(self.embedding_size, self.embedding_size, bias=True)
+        self.linear_edge_out = nn.Linear(self.embedding_size, self.embedding_size, bias=True)
+
+        # parameters initialization
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        # Inside the function, a standard deviation (stdv) is first calculated, which is based on the inverse square of embedding_size.
+        # Then, all the parameters of the model are iterated over, initializing the data (i.e., the weights) for each parameter to a value drawn from the uniform distribution, ranging from -stdv to stdv.
+        # This initialization helps to set the parameters to small random values at the beginning of training for better model training and optimization.
+        stdv = 1.0 / math.sqrt(self.embedding_size)
+        for weight in self.parameters():
+            weight.data.uniform_(-stdv, stdv)
+
+
+    def GNNCell(self, A, hidden):
+        r"""Obtain latent vectors of nodes via graph neural networks.
+
+        Args:
+            A(torch.FloatTensor):The connection matrix,shape of [batch_size, max_session_len, 2 * max_session_len]
+
+            hidden(torch.FloatTensor):The item node embedding matrix, shape of
+                [batch_size, max_session_len, embedding_size]
+
+        Returns:
+            torch.FloatTensor: Latent vectors of nodes,shape of [batch_size, max_session_len, embedding_size]
+
+        """
+
+        input_in = torch.matmul(A[:, :, :A.size(1)], self.linear_edge_in(hidden)) + self.b_iah
+        input_out = torch.matmul(A[:, :, A.size(1):2 * A.size(1)], self.linear_edge_out(hidden)) + self.b_ioh
+        # [batch_size, max_session_len, embedding_size * 2]
+        inputs = torch.cat([input_in, input_out], 2)
+
+        # gi.size equals to gh.size, shape of [batch_size, max_session_len, embedding_size * 3]
+        gi = F.linear(inputs, self.w_ih, self.b_ih)
+        gh = F.linear(hidden, self.w_hh, self.b_hh)
+        # (batch_size, max_session_len, embedding_size)
+        i_r, i_i, i_n = gi.chunk(3, 2)
+        h_r, h_i, h_n = gh.chunk(3, 2)
+        reset_gate = torch.sigmoid(i_r + h_r)
+        input_gate = torch.sigmoid(i_i + h_i)
+        new_gate = torch.tanh(i_n + reset_gate * h_n)
+        hy = (1 - input_gate) * hidden + input_gate * new_gate
+        return hy
+
+    def forward(self, A, hidden):
+        for i in range(self.step):
+            hidden = self.GNNCell(A, hidden)
+        return hidden
 
 
 class SimDCL(SequentialRecommender):
