@@ -1,16 +1,21 @@
 import numpy as np
 import torch
-from recbole.data.interaction import cat_interactions
-from recbole.data.dataloader.general_dataloader import TrainDataLoader, NegSampleEvalDataLoader, FullSortEvalDataLoader
-
-from recbole_gnn.data.transform import gnn_construct_transform
 
 
-class CustomizedTrainDataLoader(TrainDataLoader):
+
+from utils.dataloader.mixins import SessionGraphTransformMixin
+from utils.dataloader.sequential_dataloader import SequentialDataLoader
+
+class SessGraphTrainDataLoader(SessionGraphTransformMixin, SequentialDataLoader):
     def __init__(self, config, dataset, sampler, shuffle=False):
         super().__init__(config, dataset, sampler, shuffle=shuffle)
-        if config['gnn_transform'] is not None:
-            self.transform = gnn_construct_transform(config)
+    def collate_fn(self, index):
+        index = np.array(index)
+        interactions = self._dataset[index]
+        interactions = self.transform(self._da)
+        augmented_data = self.augment(interactions)
+
+        return self._neg_sampling(augmented_data)
 
 
 class GraphNegSampleEvalDataLoader(NegSampleEvalDataLoader):
