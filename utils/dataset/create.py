@@ -1,53 +1,57 @@
 import importlib
 import os
 import pickle
+from logging import getLogger
 
-from recbole.data.dataloader import *
-from recbole.utils import ModelType, ensure_dir, get_local_time, set_color
-from recbole.utils.argument_list import dataset_arguments
+from recbole.utils import set_color
+from utils import ModelType
 
 
-# TODO: currently recbole version
-def create_dataset(config):
-    """Create dataset according to :attr:`config['model']` and :attr:`config['MODEL_TYPE']`.
-    If :attr:`config['dataset_save_path']` file exists and
-    its :attr:`config` of dataset is equal to current :attr:`config` of dataset.
-    It will return the saved dataset in :attr:`config['dataset_save_path']`.
+def _find_custom_dataset_class(config):
+    model_name = config["model"]
 
-    Args:
-        config (Config): An instance object of Config, used to record parameter information.
+    custom_modules = [
+        "utils.dataset.graph_datasets",
+        # "utils.dataset.crossdomain_datasets",
+    ]
 
-    Returns:
-        Dataset: Constructed dataset.
-    """
-    dataset_module = importlib.import_module("recbole.data.dataset")
-    if hasattr(dataset_module, config["model"] + "Dataset"):
-        dataset_class = getattr(dataset_module, config["model"] + "Dataset")
-    else:
-        model_type = config["MODEL_TYPE"]
-        type2class = {
-            ModelType.GENERAL: "Dataset",
-            ModelType.SEQUENTIAL: "SequentialDataset",
-            ModelType.CONTEXT: "Dataset",
-            ModelType.KNOWLEDGE: "KnowledgeBasedDataset",
-            ModelType.TRADITIONAL: "Dataset",
-            ModelType.DECISIONTREE: "Dataset",
-        }
-        dataset_class = getattr(dataset_module, type2class[model_type])
+    if "custom_dataset_modules" in config:
+        custom_modules.extend(config["custom_dataset_modules"])
 
+    for module_path in custom_modules:
+        try:
+            module = importlib.import_module(module_path)
+            class_name = f"{model_name}Dataset"
+            if hasattr(module, class_name):
+                return getattr(module, class_name)
+            else:
+                model_type = config["MODEL_TYPE"]
+                type2class = {
+                    ModelType.GRAPH: "GeneralGraphDataset",
+                    ModelType.SESSION_GRAPH: "SessionGraphDataset"
+                }
+                if model_type in type2class:
+                    class_name = type2class[model_type]
+                    if hasattr(module, class_name):
+                        return getattr(module, class_name)
+
+        # TODO: Maybe not the best way to handle
+        except ImportError:
+            continue
+
+    return None
+
+
+def _create_dataset_with_caching(config, dataset_class):
     default_file = os.path.join(
         config["checkpoint_dir"], f'{config["dataset"]}-{dataset_class.__name__}.pth'
     )
     file = config["dataset_save_path"] or default_file
+
     if os.path.exists(file):
         with open(file, "rb") as f:
             dataset = pickle.load(f)
-        dataset_args_unchanged = True
-        for arg in dataset_arguments + ["seed", "repeatable"]:
-            if config[arg] != dataset.config[arg]:
-                dataset_args_unchanged = False
-                break
-        if dataset_args_unchanged:
+        if _validate_dataset_config(dataset, config):
             logger = getLogger()
             logger.info(set_color("Load filtered dataset from", "pink") + f": [{file}]")
             return dataset
@@ -56,3 +60,27 @@ def create_dataset(config):
     if config["save_dataset"]:
         dataset.save()
     return dataset
+
+
+def _validate_dataset_config(dataset, config):
+    from recbole.utils.argument_list import dataset_arguments
+
+    dataset_args_unchanged = True
+    for arg in dataset_arguments + ["seed", "repeatable"]:
+        if config[arg] != dataset.config[arg]:
+            dataset_args_unchanged = False
+            break
+    return dataset_args_unchanged
+
+
+def create_dataset(config):
+    """a solution from recbole-gnn"""
+
+    dataset_class = _find_custom_dataset_class(config)
+
+    if dataset_class is not None:
+        return _create_dataset_with_caching(config, dataset_class)
+    else:
+        from recbole.data import create_dataset as recbole_create_dataset
+        return recbole_create_dataset(config)
+

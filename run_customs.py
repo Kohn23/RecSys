@@ -11,7 +11,8 @@ from utils.logger import *
 
 # single-domain
 from recbole.config import Config
-from recbole.data import create_dataset
+# from recbole.data import create_dataset
+from utils.dataset import create_dataset
 from utils.dataloader import create_dataloaders
 from recbole.trainer import Trainer
 from utils.trainer import DSERTrainer

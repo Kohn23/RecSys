@@ -1,9 +1,23 @@
 from enum import Enum
 
 
-class CrossDomainModelType(Enum):
+class ModelType(Enum):
+    """Type of models.
+
+    - ``GENERAL``: General Recommendation
+    - ``SEQUENTIAL``: Sequential Recommendation
+    - ``CONTEXT``: Context-aware Recommendation
+    - ``KNOWLEDGE``: Knowledge-based Recommendation
+    """
 
     GENERAL = 1
+    SEQUENTIAL = 2
+    CONTEXT = 3
+    KNOWLEDGE = 4
+    TRADITIONAL = 5
+    DECISIONTREE = 6
+    GRAPH = 7
+    SESSION_GRAPH = 8
 
 
 class CrossDomainDataLoaderState(Enum):

@@ -1,12 +1,12 @@
 from recbole.model.abstract_recommender import GeneralRecommender
-from recbole.utils import ModelType
+from utils import ModelType
 
 
 class GeneralGraphRecommender(GeneralRecommender):
     """This is an abstract general graph recommender. All the general graph models should implement in this class.
     The base general graph recommender class provide the basic U-I graph dataset and parameters information.
     """
-    type = ModelType.GENERAL
+    type = ModelType.GRAPH
 
     def __init__(self, config, dataset):
         super(GeneralGraphRecommender, self).__init__(config, dataset)
