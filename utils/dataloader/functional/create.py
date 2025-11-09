@@ -6,12 +6,17 @@ from typing import Literal
 
 from recbole.data.dataloader import *
 from recbole.sampler import KGSampler, Sampler, RepeatableSampler
-from recbole.utils import ensure_dir, set_color
+from recbole.utils import ModelType, ensure_dir, set_color
 from recbole.utils.argument_list import dataset_arguments
 
 from utils.dataloader.sequential_dataloader import SequentialDataLoader
-from utils.dataloader.graph_dataloader import SessionGraphTransformMixin
-from utils import ModelType
+from utils.dataloader.graph_dataloader import (
+    SessGraphTrainDataLoader,
+    SessGraphFullSortEvalDataLoader,
+    SessGraphNegSampleEvalDataLoader
+)
+from utils import ExtModelType
+
 
 def _create_sampler(
     dataset,
@@ -195,21 +200,28 @@ def _get_dataloader(config, phase: Literal["train", "valid", "test", "evaluation
         return register_table[config["model"]](config, phase)
 
     model_type = config["MODEL_TYPE"]
+    print("model_type: ", model_type)
     if phase == "train":
         if model_type == ModelType.KNOWLEDGE:
             return KnowledgeBasedDataLoader
         elif model_type == ModelType.SEQUENTIAL:
             return SequentialDataLoader
-        elif model_type == ModelType.SESSION_GRAPH:
-            return S
+        elif model_type == ExtModelType.SESSION_GRAPH:
+            return SessGraphTrainDataLoader
         else:
             return TrainDataLoader
     else:
         eval_mode = config["eval_args"]["mode"][phase]
         if eval_mode == "full":
-            return FullSortEvalDataLoader
+            if model_type == ExtModelType.SESSION_GRAPH:
+                return SessGraphFullSortEvalDataLoader
+            else:
+                return FullSortEvalDataLoader
         else:
-            return NegSampleEvalDataLoader
+            if model_type == ExtModelType.SESSION_GRAPH:
+                return SessGraphNegSampleEvalDataLoader
+            else:
+                return NegSampleEvalDataLoader
 
 
 def _get_AE_dataloader(config, phase: Literal["train", "valid", "test", "evaluation"]):

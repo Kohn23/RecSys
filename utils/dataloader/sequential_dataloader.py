@@ -63,7 +63,6 @@ class SequentialDataLoader(SequentialDataAugmentMixin, NegSampleDataLoader):
     def collate_fn(self, index):
         index = np.array(index)
         interactions = self._dataset[index]
-        # debug
-        print(self._dataset.__class__)
+        # transformed_data = self.transform(interactions)
         augmented_data = self.augment(interactions)
         return self._neg_sampling(augmented_data)

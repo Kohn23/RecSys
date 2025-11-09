@@ -4,7 +4,7 @@ import pickle
 from logging import getLogger
 
 from recbole.utils import set_color
-from utils import ModelType
+from utils import ExtModelType
 
 
 def _find_custom_dataset_class(config):
@@ -27,8 +27,8 @@ def _find_custom_dataset_class(config):
             else:
                 model_type = config["MODEL_TYPE"]
                 type2class = {
-                    ModelType.GRAPH: "GeneralGraphDataset",
-                    ModelType.SESSION_GRAPH: "SessionGraphDataset"
+                    ExtModelType.GRAPH: "GeneralGraphDataset",
+                    ExtModelType.SESSION_GRAPH: "SessionGraphDataset"
                 }
                 if model_type in type2class:
                     class_name = type2class[model_type]
