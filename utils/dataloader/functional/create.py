@@ -6,11 +6,12 @@ from typing import Literal
 
 from recbole.data.dataloader import *
 from recbole.sampler import KGSampler, Sampler, RepeatableSampler
-from recbole.utils import ModelType, ensure_dir, set_color
+from recbole.utils import ensure_dir, set_color
 from recbole.utils.argument_list import dataset_arguments
 
 from utils.dataloader.sequential_dataloader import SequentialDataLoader
-
+from utils.dataloader.graph_dataloader import SessionGraphTransformMixin
+from utils import ModelType
 
 def _create_sampler(
     dataset,
@@ -199,6 +200,8 @@ def _get_dataloader(config, phase: Literal["train", "valid", "test", "evaluation
             return KnowledgeBasedDataLoader
         elif model_type == ModelType.SEQUENTIAL:
             return SequentialDataLoader
+        elif model_type == ModelType.SESSION_GRAPH:
+            return S
         else:
             return TrainDataLoader
     else:

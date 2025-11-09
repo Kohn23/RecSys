@@ -9,8 +9,10 @@ from recbole.data.interaction import Interaction
 from abc import ABC, abstractmethod
 
 
-class DataAugmentMixin(ABC):
-    """Interface"""
+class BatchAugmentMixin(ABC):
+    """
+    As mentioned in its name, such classes are meant to be used in collate_fn
+    """
 
     @property
     def map_function(self):
@@ -34,7 +36,7 @@ class DataAugmentMixin(ABC):
         pass
 
 
-class SequentialDataAugmentMixin(DataAugmentMixin):
+class SequentialDataAugmentMixin(BatchAugmentMixin):
     """
     Sequential augment
     """
