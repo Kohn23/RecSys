@@ -200,7 +200,6 @@ def _get_dataloader(config, phase: Literal["train", "valid", "test", "evaluation
         return register_table[config["model"]](config, phase)
 
     model_type = config["MODEL_TYPE"]
-    print("model_type: ", model_type)
     if phase == "train":
         if model_type == ModelType.KNOWLEDGE:
             return KnowledgeBasedDataLoader
