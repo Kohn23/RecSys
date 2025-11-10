@@ -106,19 +106,19 @@ if __name__ == "__main__":
     # ]
     # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abe_electronics', config_file_list=config_file_list)
 
-    # config_file_list = [
-    #     './config/properties/overall.yaml',
-    #     './config/properties/train/sequential.yaml',
-    #     './config/properties/data/single_domain.yaml',
-    #     './config/properties/model/CL4SRec.yaml',
-    # ]
-    # run_single_domain(module=CL4SRec, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
-
     config_file_list = [
         './config/properties/overall.yaml',
-        './config/properties/train/graph.yaml',
+        './config/properties/train/sequential.yaml',
         './config/properties/data/single_domain.yaml',
-        './config/properties/model/SimGCL.yaml',
+        './config/properties/model/CL4SRec.yaml',
     ]
-    run_single_domain(module=SimGCL, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
+    run_single_domain(module=CL4SRec, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
 
+    # config_file_list = [
+    #     './config/properties/overall.yaml',
+    #     './config/properties/train/graph.yaml',
+    #     './config/properties/data/single_domain.yaml',
+    #     './config/properties/model/SimGCL.yaml',
+    # ]
+    # run_single_domain(module=SimGCL, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
+    #

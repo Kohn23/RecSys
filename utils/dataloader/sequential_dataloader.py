@@ -17,10 +17,10 @@ from utils.dataloader.abstract_dataloader import (
 from recbole.data.interaction import Interaction, cat_interactions
 from recbole.utils import InputType, ModelType
 
-from utils.dataloader.mixins import SequentialDataAugmentMixin
+from utils.dataloader.batch_augment import SequentialAugment
 
 
-class SequentialDataLoader(SequentialDataAugmentMixin, NegSampleDataLoader):
+class SequentialDataLoader(NegSampleDataLoader):
     """
     Modified :class:TrainDataloader for Sequential data augmentation
 
@@ -37,8 +37,8 @@ class SequentialDataLoader(SequentialDataAugmentMixin, NegSampleDataLoader):
             config, dataset, config["MODEL_INPUT_TYPE"], config["train_neg_sample_args"]
         )
         self.sample_size = len(dataset)
-        SequentialDataAugmentMixin.__init__(self, config)
-        NegSampleDataLoader.__init__(self, config, dataset, sampler, shuffle=shuffle)
+        self.augment = SequentialAugment(config)
+        super().__init__(config, dataset, sampler, shuffle=shuffle)
 
     def _init_batch_size_and_step(self):
         batch_size = self.config["train_batch_size"]

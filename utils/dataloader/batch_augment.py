@@ -1,5 +1,5 @@
 """
-Data Augment Mixins only provide augment frameworks, specific methods should be applied dynamically
+Data Augment only provide augment frameworks, specific methods should be applied dynamically
 """
 
 import random
@@ -9,10 +9,12 @@ from recbole.data.interaction import Interaction
 from abc import ABC, abstractmethod
 
 
-class BatchAugmentMixin(ABC):
+class BatchAugment(ABC):
     """
     As mentioned in its name, such classes are meant to be used in collate_fn
     """
+    def __init__(self, config):
+        pass
 
     @property
     def map_function(self):
@@ -27,16 +29,13 @@ class BatchAugmentMixin(ABC):
             'reorder': seq_item_reorder,
         }
 
-    def __init__(self, config):
-        pass
-
     @abstractmethod
-    def augment(self, interaction):
+    def __call__(self, interaction):
         """data augment"""
         pass
 
 
-class SequentialDataAugmentMixin(BatchAugmentMixin):
+class SequentialAugment(BatchAugment):
     """
     Sequential augment
     """
@@ -145,7 +144,7 @@ class SequentialDataAugmentMixin(BatchAugmentMixin):
         interaction.update(Interaction(key_val))
         return interaction
 
-    def augment(self, interaction):
+    def __call__(self, interaction):
         if not self.augment_method:
             return interaction
 
