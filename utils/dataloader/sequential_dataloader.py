@@ -8,15 +8,8 @@ Note:
 
 
 import numpy as np
-import torch
 from logging import getLogger
-from utils.dataloader.abstract_dataloader import (
-    AbstractDataLoader,
-    NegSampleDataLoader,
-)
-from recbole.data.interaction import Interaction, cat_interactions
-from recbole.utils import InputType, ModelType
-
+from utils.dataloader.abstract_dataloader import NegSampleDataLoader
 from utils.dataloader.batch_augment import SequentialAugment
 
 
@@ -63,6 +56,6 @@ class SequentialDataLoader(NegSampleDataLoader):
     def collate_fn(self, index):
         index = np.array(index)
         interactions = self._dataset[index]
-        # transformed_data = self.transform(interactions)
-        augmented_data = self.augment(interactions)
+        transformed_data = self.transform(self._dataset, interactions)
+        augmented_data = self.augment(transformed_data)
         return self._neg_sampling(augmented_data)

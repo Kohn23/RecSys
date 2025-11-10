@@ -1,12 +1,8 @@
 """
     You can also run this script on terminal/with config
 """
-from recbole_cdr.quick_start import run_recbole_cdr
 from recbole.quick_start import run_recbole
-from config.config_dicts import config_sr, config_cdr
-from recbole.model.sequential_recommender import BERT4Rec, FEARec
-from recbole_cdr.model.cross_domain_recommender.conet import CoNet
-
+from utils.config import config_sr
 
 if __name__ == "__main__":
 

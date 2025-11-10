@@ -3,7 +3,7 @@ from torch.nn.utils.rnn import pad_sequence
 from recbole.data.interaction import Interaction
 
 
-def build_session_graph(self, dataset, interaction):
+def build_session_graph(dataset, interaction):
     """Build session graph from interaction data"""
     graph_objs = dataset.graph_objs
     index = interaction['graph_idx']

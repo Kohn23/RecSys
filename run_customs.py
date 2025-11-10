@@ -15,7 +15,7 @@ from utils.dataset import create_dataset
 from utils.dataloader import create_dataloaders
 from recbole.trainer import Trainer
 from utils.trainer import DSERTrainer
-from models import DSER, CL4SRec, CLF4SRec, SimGCL
+from models import DSER, CL4SRec, CLF4SRec, SimGCL, GCSAN, SimDCL
 
 
 def run_single_domain(module: Type[nn.Module], trainer, dataset, config_file_list):
@@ -100,25 +100,25 @@ if __name__ == "__main__":
     os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
     # config_file_list = [
-    #     './config/properties/overall.yaml',
-    #     './config/properties/dataset/single_domain.yaml',
-    #     './config/properties/model/DSER.yaml',
+    #     './properties/overall.yaml',
+    #     './properties/dataset/single_domain.yaml',
+    #     './properties/model/DSER.yaml',
     # ]
     # run_single_domain(module=DSER, trainer=DSERTrainer, dataset='abe_electronics', config_file_list=config_file_list)
 
-    config_file_list = [
-        './config/properties/overall.yaml',
-        './config/properties/train/sequential.yaml',
-        './config/properties/data/single_domain.yaml',
-        './config/properties/model/CL4SRec.yaml',
-    ]
-    run_single_domain(module=CL4SRec, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
-
     # config_file_list = [
-    #     './config/properties/overall.yaml',
-    #     './config/properties/train/graph.yaml',
-    #     './config/properties/data/single_domain.yaml',
-    #     './config/properties/model/SimGCL.yaml',
+    #     './properties/overall.yaml',
+    #     './properties/train/sequential.yaml',
+    #     './properties/data/single_domain.yaml',
+    #     './properties/model/CL4SRec.yaml',
     # ]
-    # run_single_domain(module=SimGCL, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
-    #
+    # run_single_domain(module=CL4SRec, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
+
+    config_file_list = [
+        './properties/overall.yaml',
+        './properties/train/graph.yaml',
+        './properties/data/single_domain.yaml',
+        './properties/model/SimDCL.yaml',
+    ]
+    run_single_domain(module=SimDCL, trainer=Trainer, dataset='amb_movies', config_file_list=config_file_list)
+

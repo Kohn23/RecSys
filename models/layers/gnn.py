@@ -1,8 +1,6 @@
 """
     RecBole-GNN based layers
 """
-
-
 import numpy as np
 import torch
 import torch.nn as nn

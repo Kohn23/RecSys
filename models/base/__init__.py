@@ -1,1 +1,1 @@
-from models.base.graph import GeneralGraphRecommender
+from models.base.graph import GeneralGraphRecommender, SessGraphRecommender

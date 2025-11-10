@@ -15,6 +15,18 @@ def _mask_correlated_samples(batch_size):
     return mask
 
 
+def sim_fn(z1: torch.Tensor, z2: torch.Tensor, tau=1.0, fn='cos'):
+    if z1.size(1) != z2.size(1):
+        z1 = z1.expand(-1, z2.size(1))
+    z = torch.cat((z1, z2), dim=0)  # [2B, H]
+    if fn == 'cos':
+        return nn.functional.cosine_similarity(z.unsqueeze(1), z.unsqueeze(0), dim=2) / tau
+    elif fn == 'dot':
+        return torch.mm(z, z.T) / tau
+    else:
+        raise NotImplementedError
+
+
 def info_nce(query_emb, pos_emb, tau, batch_size, sim='dot'):
     """
     In-batch InfoNCE loss (SimCLR-style)
@@ -22,27 +34,16 @@ def info_nce(query_emb, pos_emb, tau, batch_size, sim='dot'):
     Args:
         query_emb: [B, H]   anchor / user sequence representation
         pos_emb:   [B, H]   positive item representation
-        temperature: float  scaling factor
+        tau: float  scaling factor
         batch_size: int
-        sim: 'dot' or 'cos'
+        sim_fn: 'dot' or 'cos'
     Returns:
         logits: [2B, 1 + 2(B-1)]   positive + negatives
         labels: [2B]               index of positive sample (always 0)
     """
     N = 2 * batch_size  # total pairs
 
-    if query_emb.size(1) != pos_emb.size(1):
-        query_emb = query_emb.expand(-1, pos_emb.size(1))
-    all_emb = torch.cat((query_emb, pos_emb), dim=0)  # [2B, H]
-
-    if sim == 'cos':
-        sim_matrix = nn.functional.cosine_similarity(
-            all_emb.unsqueeze(1), all_emb.unsqueeze(0), dim=2
-        ) / tau
-    elif sim == 'dot':
-        sim_matrix = torch.mm(all_emb, all_emb.T) / tau
-    else:
-        raise NotImplementedError
+    sim_matrix = sim_fn(query_emb, pos_emb, tau, sim)
 
     sim_q_to_p = torch.diag(sim_matrix, batch_size)   # [B]
     sim_p_to_q = torch.diag(sim_matrix, -batch_size)  # [B]

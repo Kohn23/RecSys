@@ -12,10 +12,17 @@ Note:
 
 """
 import torch
-import torch.nn as nn
+from torch import nn
+from torch.nn import Parameter
+from torch.nn import functional as F
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import TransformerEncoder
 from recbole.model.loss import BPRLoss
+import math
+import numpy as np
+import utils.tool as tool
+from models.functional import sim_fn
+
 
 class GNN(nn.Module):
     r"""Graph neural networks are well-suited for session-based recommendation,
@@ -101,6 +108,7 @@ class SimDCL(SequentialRecommender):
     def __init__(self, config, dataset):
         super(SimDCL, self).__init__(config, dataset)
 
+        self.config = config
         # load parameters info
         ## tf
         # Get the values of "n_layers" and "n_heads" from "config", representing the number of layers and attention heads in the model, respectively
@@ -324,44 +332,92 @@ class SimDCL(SequentialRecommender):
 
         for loss_func_temp in self.config['loss_func_temp']:
             loss_func_temp_arr = loss_func_temp.split('#')
-            match loss_func_temp_arr[0]:
-                case 'loss_1':  # debias cl
+            # supported since Python3.10
+            # match loss_func_temp_arr[0]:
+            #     case 'loss_1':  # debias cl
+            #         seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+            #         seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+            #         loss += self.d_cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+            #     case 'loss_11':  # debias cl
+            #         seq_output1 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+            #         seq_output2 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+            #         loss += self.d_cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+            #     case 'loss_2':  # cl
+            #         if len(loss_func_temp_arr) > 2 and 'tf' == loss_func_temp_arr[2]:
+            #             seq_output1 = self.forward_tf_gn('gn', item_seq, item_seq_len)
+            #             seq_output2 = self.forward_tf_gn('gn', item_seq, item_seq_len)
+            #         else:
+            #             seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+            #             seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+            #         loss += self.cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+            #     case 'loss_3':  # cl nd
+            #         item_seq_1, item_seq_len_1 = tool.node_dropout(item_seq, item_seq_len, dropout_rate=self.config['nd_rate'])
+            #         seq_output1 = self.forward_tf_gn('gn', item_seq_1, item_seq_len_1)
+            #         seq_output2 = self.forward_tf_gn('gn', item_seq_1, item_seq_len_1)
+            #         loss += self.cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+            #     case 'loss_4':  # debias cl
+            #         seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+            #         seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+            #         da_seq_output_arr = []
+            #         for i in range(self.config['sample_batch']):
+            #             seq_output11 = self.forward_tf_gn('gn', item_seq, item_seq_len)
+            #             da_seq_output_arr.append(seq_output11)
+            #         loss += self.d_cl_loss_2(seq_output1, seq_output2, da_seq_output_arr, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+            #     case 'loss_44':  # debias cl
+            #         seq_output1 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+            #         seq_output2 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+            #         da_seq_output_arr = []
+            #         for i in range(self.config['sample_batch']):
+            #             seq_output11 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+            #             da_seq_output_arr.append(seq_output11)
+            #         loss += self.d_cl_loss_22(seq_output1, seq_output2, da_seq_output_arr, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+            if loss_func_temp_arr[0] == 'loss_1':  # debias cl
+                seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+                seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+                loss += self.d_cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]),
+                                         batch_size=item_seq_len.shape[0])
+            elif loss_func_temp_arr[0] == 'loss_11':  # debias cl
+                seq_output1 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+                seq_output2 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+                loss += self.d_cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]),
+                                         batch_size=item_seq_len.shape[0])
+            elif loss_func_temp_arr[0] == 'loss_2':  # cl
+                if len(loss_func_temp_arr) > 2 and 'tf' == loss_func_temp_arr[2]:
+                    seq_output1 = self.forward_tf_gn('gn', item_seq, item_seq_len)
+                    seq_output2 = self.forward_tf_gn('gn', item_seq, item_seq_len)
+                else:
                     seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
                     seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
-                    loss += self.d_cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
-                case 'loss_11':  # debias cl
-                    seq_output1 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
-                    seq_output2 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
-                    loss += self.d_cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
-                case 'loss_2':  # cl
-                    if len(loss_func_temp_arr) > 2 and 'tf' == loss_func_temp_arr[2]:
-                        seq_output1 = self.forward_tf_gn('gn', item_seq, item_seq_len)
-                        seq_output2 = self.forward_tf_gn('gn', item_seq, item_seq_len)
-                    else:
-                        seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
-                        seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
-                    loss += self.cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
-                case 'loss_3':  # cl nd
-                    item_seq_1, item_seq_len_1 = tool.node_dropout(item_seq, item_seq_len, dropout_rate=self.config['nd_rate'])
-                    seq_output1 = self.forward_tf_gn('gn', item_seq_1, item_seq_len_1)
-                    seq_output2 = self.forward_tf_gn('gn', item_seq_1, item_seq_len_1)
-                    loss += self.cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
-                case 'loss_4':  # debias cl
-                    seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
-                    seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
-                    da_seq_output_arr = []
-                    for i in range(self.config['sample_batch']):
-                        seq_output11 = self.forward_tf_gn('gn', item_seq, item_seq_len)
-                        da_seq_output_arr.append(seq_output11)
-                    loss += self.d_cl_loss_2(seq_output1, seq_output2, da_seq_output_arr, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
-                case 'loss_44':  # debias cl
-                    seq_output1 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
-                    seq_output2 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
-                    da_seq_output_arr = []
-                    for i in range(self.config['sample_batch']):
-                        seq_output11 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
-                        da_seq_output_arr.append(seq_output11)
-                    loss += self.d_cl_loss_22(seq_output1, seq_output2, da_seq_output_arr, temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+                loss += self.cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]),
+                                       batch_size=item_seq_len.shape[0])
+            elif loss_func_temp_arr[0] == 'loss_3':  # cl nd
+                item_seq_1, item_seq_len_1 = tool.node_dropout(item_seq, item_seq_len,
+                                                               dropout_rate=self.config['nd_rate'])
+                seq_output1 = self.forward_tf_gn('gn', item_seq_1, item_seq_len_1)
+                seq_output2 = self.forward_tf_gn('gn', item_seq_1, item_seq_len_1)
+                loss += self.cl_loss_1(seq_output1, seq_output2, temp=float(loss_func_temp_arr[1]),
+                                       batch_size=item_seq_len.shape[0])
+            elif loss_func_temp_arr[0] == 'loss_4':  # debias cl
+                seq_output1 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+                seq_output2 = self.forward_gnn_gn('gn', item_seq, item_seq_len)
+                da_seq_output_arr = []
+                for i in range(self.config['sample_batch']):
+                    seq_output11 = self.forward_tf_gn('gn', item_seq, item_seq_len)
+                    da_seq_output_arr.append(seq_output11)
+                loss += self.d_cl_loss_2(seq_output1, seq_output2, da_seq_output_arr, temp=float(loss_func_temp_arr[1]),
+                                         batch_size=item_seq_len.shape[0])
+            elif loss_func_temp_arr[0] == 'loss_44':  # debias cl
+                seq_output1 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+                seq_output2 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+                da_seq_output_arr = []
+                for i in range(self.config['sample_batch']):
+                    seq_output11 = self.d_forward_tf_gn('gn', item_seq, item_seq_len)
+                    da_seq_output_arr.append(seq_output11)
+                loss += self.d_cl_loss_22(seq_output1, seq_output2, da_seq_output_arr,
+                                          temp=float(loss_func_temp_arr[1]), batch_size=item_seq_len.shape[0])
+            else:
+                # 可以添加一个默认情况，或者抛出异常
+                raise ValueError(f"Unknown loss function: {loss_func_temp_arr[0]}")
 
         if torch.isnan(loss) or torch.isinf(loss):
             print("cl_loss:", loss)
@@ -487,7 +543,7 @@ class SimDCL(SequentialRecommender):
         # Negative sample: is the inner product of itself and itself, or the product of the zeroth row in z_i and the zeroth row in z_j.
         N = 2 * batch_size
 
-        sim = tool.sim(z_i,z_j,temp,self.config['simf'])
+        sim = sim_fn(z_i,z_j,temp,self.config['simf'])
 
         # Take the diagonal entries of the matrix
         sim_i_j = torch.diag(sim, batch_size)  # B*1 # The main diagonal must be moved B rows up to be a positive sample
@@ -529,7 +585,7 @@ class SimDCL(SequentialRecommender):
         N = 2 * batch_size
 
         # build positive_samples
-        sim = tool.sim(z_i, da_z_j,temp,self.config['simf'])  # 2B * 2B
+        sim = sim_fn(z_i, da_z_j,temp,self.config['simf'])  # 2B * 2B
         # Take the diagonal entries of the matrix
         sim_i_j = torch.diag(sim, batch_size)  # B*1 # Main diagonal, must move up B line, is a positive sample
         sim_j_i = torch.diag(sim, -batch_size)  # B*1 # Main diagonal, must move up B line, is a positive sample
@@ -582,7 +638,7 @@ class SimDCL(SequentialRecommender):
         # The cosine similarity of the positive samples z1 and z2 is calculated and divided by the temperature parameter temp.
         # Similarly, the cosine similarity of z1_fix and z2_fix is calculated
         # Reference sim
-        ref_sim = tool.sim(z_i,z_j,temp,self.config['simf'])
+        ref_sim = sim_fn(z_i,z_j,temp,self.config['simf'])
         # 2. Positive samples correspond to labels
         # Create a label tensor with an integer from 0 to cos_sim.size(0)-1. Transfer it to the same device as self.device
         # tag
@@ -601,7 +657,7 @@ class SimDCL(SequentialRecommender):
                 # z_j_arr[j] = torch.where(torch.isnan(z_j), torch.zeros_like(z_j), z_j)
 
                 # Similarity between positive and negative cases
-                cos_sim_1 = tool.sim(z_j,da_z_j,temp,self.config['simf'])
+                cos_sim_1 = sim_fn(z_j,da_z_j,temp,self.config['simf'])
                 # Fusion of positive and negative examples
                 cos_sim_fused = torch.cat([ref_sim, cos_sim_1], 1)
                 # Calculate the cos_sim after multiple similarity fusion, and calculate the corresponding loss accordingly
@@ -618,7 +674,7 @@ class SimDCL(SequentialRecommender):
         negative_samples_arr = []
         positive_samples = None
         for da_z_j in da_z_j_arr:
-            sim = tool.sim(z_i,da_z_j,temp,self.config['simf'])
+            sim = sim_fn(z_i,da_z_j,temp,self.config['simf'])
 
             # mask negative sample elements with high similarity
             phi_val = self.config['phi'] * torch.max(ref_sim)
@@ -670,7 +726,7 @@ class SimDCL(SequentialRecommender):
         # The cosine similarity of the positive samples z1 and z2 is calculated and divided by the temperature parameter temp.
         # Similarly, the cosine similarity of z1_fix and z2_fix is calculated
         # Reference sim
-        ref_sim = tool.sim(z_i,z_j,temp,self.config['simf'])
+        ref_sim = sim_fn(z_i,z_j,temp,self.config['simf'])
         # 2. Positive samples correspond to labels
         # Create a label tensor with an integer from 0 to cos_sim.size(0)-1. Transfer it to the same device as self.device
         # tag
@@ -681,7 +737,7 @@ class SimDCL(SequentialRecommender):
                 da_z_j = da_z_j_arr[j]
 
                 # Similarity between positive and negative cases
-                cos_sim_1 = tool.sim(z_j,da_z_j,temp,self.config['simf'])
+                cos_sim_1 = sim_fn(z_j,da_z_j,temp,self.config['simf'])
                 # Positive and negative examples merge
                 cos_sim_fused = torch.cat([ref_sim, cos_sim_1], 1)
                 # Calculate the cos_sim after multiple similarity fusion, and calculate the corresponding loss accordingly
@@ -698,7 +754,7 @@ class SimDCL(SequentialRecommender):
         negative_samples_arr = []
         positive_samples = None
         for da_z_j in da_z_j_arr:
-            sim = tool.sim(z_i,da_z_j,temp,self.config['simf'])
+            sim = sim_fn(z_i,da_z_j,temp,self.config['simf'])
 
             # Take the diagonal entries of the matrix
             sim_i_j = torch.diag(sim, batch_size)  # B*1
@@ -741,7 +797,7 @@ class SimDCL(SequentialRecommender):
             mask[batch_size + i, i] = 0
         return mask
 
-    # 6
+    # 6wo
     def predict(self, interaction):
         # print("================= predict(self, interaction) ===================")
         item_seq = interaction[self.ITEM_SEQ]
