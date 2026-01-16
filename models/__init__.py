@@ -8,4 +8,5 @@ from models.lightgcn import LightGCN
 from models.simgcl import SimGCL
 from models.gcsan import GCSAN
 from models.simdcl import SimDCL
+from models.gac import GAC
 

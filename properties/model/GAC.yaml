@@ -1,0 +1,8 @@
+embedding_size: 64
+loss_type: 'BPR'
+num_iterations: 3
+L: 5
+
+# train-preferable
+# lr: 0.001
+# weight_decay: 1e-5
